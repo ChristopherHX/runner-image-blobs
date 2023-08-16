@@ -8,7 +8,7 @@ jobs:
       run: |
         sudo apt update && sudo apt install -y pv
         touch sha.txt
-        sudo tar -cf "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc" "--exclude=/dev" "--exclude=/run" "--exclude=/var" / | pv | tee >(sha256sum > sha.txt) | tar -t
+        sudo tar -c "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc" "--exclude=/dev" "--exclude=/run" "--exclude=/var" / | pv | tee >(sha256sum > sha.txt) | tar -t
         echo "Sha is"
         cat sha.txt
       shell: bash
