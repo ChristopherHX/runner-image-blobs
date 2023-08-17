@@ -7,7 +7,10 @@ jobs:
     - name: Dump Image
       run: |
         touch sha.txt
-        sudo tar -c "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc" "--exclude=/dev" "--exclude=/run" "--exclude=/var" /bin | tee >(sha256sum > sha.txt) | tar -t
+        touch sha2.txt
+        sudo tar -C / -c "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc" "--exclude=/dev" "--exclude=/run" "--exclude=/var" usr/bin | tee >(sha256sum > sha.txt) |  gzip -9 -c | tee >(sha256sum > sha2.txt) | tar -zt
         echo "Sha is"
         cat sha.txt
+        echo "Sha2 is"
+        cat sha2.txt
       shell: bash
