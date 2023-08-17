@@ -12,16 +12,16 @@ jobs:
         import {DockerTarPusher, DockerTarPusherOptions, Logger} from 'docker-tar-pusher';
         import path from 'path';
         var myLogger = {
-          error: (msg: string): void => {
+          error: (msg) => {
             console.log(`[ERROR] ${msg}`);
           },
-          warn: (msg: string): void => {
+          warn: (msg) => {
             console.log(`[WARN] ${msg}`);
           },
-          info: (msg: string): void => {
+          info: (msg) => {
             console.log(`[INFO] ${msg}`);
           },
-          debug: (msg: string): void => {
+          debug: (msg) => {
             console.log(`[DEBUG] ${msg}`);
           }
         };
