@@ -9,7 +9,7 @@ jobs:
         npm install docker-tar-pusher
     - name: Create Script
       run: |
-        import {DockerTarPusher, DockerTarPusherOptions, Logger} from 'docker-tar-pusher';
+        import {DockerTarPusher} from 'docker-tar-pusher';
         import path from 'path';
         var myLogger = {
           error: (msg) => {
