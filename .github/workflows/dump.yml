@@ -11,7 +11,7 @@ jobs:
       run: |
         import {DockerTarPusher, DockerTarPusherOptions, Logger} from 'docker-tar-pusher';
         import path from 'path';
-        const myLogger: Logger = {
+        var myLogger = {
           error: (msg: string): void => {
             console.log(`[ERROR] ${msg}`);
           },
@@ -26,7 +26,7 @@ jobs:
           }
         };
         
-        const options: DockerTarPusherOptions = {
+        var options = {
           registryUrl: 'ghcr.io/${{ github.repository_owner }}/runner-images:ubuntu-latest'.toLowerCase(),
           tarball: path.relative(process.cwd(), "/dev/stdin"),
           chunkSize: 8 * 1024 * 1024,
