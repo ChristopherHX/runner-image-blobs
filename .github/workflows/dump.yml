@@ -57,10 +57,18 @@ jobs:
                 clearInterval(token);
 
                 var environment = await fs.promises.readFile("/etc/environment", { encoding: "utf-8" });
-                var envmap = {};
+                var envmap = [];
+                var trimQuotes = str => {
+                  if(str.startsWith("\"") && str.endsWith("\"")) {
+                    return str.substring(1, str.length - 1);
+                  }
+                  return str;
+                };
                 for(var line of environment.split("\n")) {
-                  var i = line.indexOf("=");
-                  envmap[line.substring(0, i)] = line.substring(i + 1);
+                  if(line.length > 0) {
+                    var i = line.indexOf("=");
+                    envmap.push(line.substring(0, i) + "=" + trimQuotes(line.substring(i + 1));
+                  }
                 }
                 
                 var config = {
