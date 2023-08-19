@@ -59,8 +59,8 @@ jobs:
                 var environment = await fs.promises.readFile("/etc/environment", { encoding: "utf-8" });
                 var envmap = {};
                 for(var line of environment.split("\n")) {
-                  var i = str.indexOf("=");
-                  envmap[str.substring(0, i)] = str.substring(i + 1);
+                  var i = line.indexOf("=");
+                  envmap[line.substring(0, i)] = line.substring(i + 1);
                 }
                 
                 var config = {
