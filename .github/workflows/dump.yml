@@ -78,7 +78,7 @@ jobs:
                 var strconfig = JSON.stringify(config);
                 console.log(strconfig);
                 var crypto = require('crypto');
-                var hash = crypto.createHash('sha256').update(strconfig).digest('base64');
+                var hash = crypto.createHash('sha256').update(strconfig).digest('hex');
                 await refresh();
                 resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/blobs/uploads/", { method: "POST", redirect: "manual", body: "", credentials: "include", headers: {
                     "Authorization": "Bearer " + token
