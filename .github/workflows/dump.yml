@@ -32,7 +32,7 @@ jobs:
                 console.log(JSON.stringify(resp.status));
                 var location = resp.headers.get("Location");
                 console.log("NEXT_URL:" + location);
-                resp = await fetch("https://ghcr.io" + location, { method: "PATCH", redirect: "manual", body: process.stdin, credentials: "include", headers: {
+                resp = await fetch("https://ghcr.io" + location, { method: "PATCH", redirect: "manual", body: process.stdin, duplex: "half", credentials: "include", headers: {
                     "Content-Type": "application/octet-stream",
                     "Authorization": "Bearer ${{ fromjson(steps.auth.outputs.resp).token }}"
                 } });
