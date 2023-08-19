@@ -5,10 +5,14 @@ jobs:
     permissions: write-all
     steps:
     - name: Dump Image
-      run: |
+      run: |  
+        curl "https://ghcr.io/token?service=registry.docker.io&scope=repository:${{ github.repository_owner}}/runner-images:pull,push" \
+        -u "${{ github.actor }}:${{ github.token }}" \
+        -v
+        exit 0
         touch sha.txt
         touch sha2.txt
-        sudo tar -C / -c "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc" "--exclude=/dev" "--exclude=/run" "--exclude=/var" usr/bin | tee >(sha256sum > sha.txt) |  gzip -9 -c | tee >(sha256sum > sha2.txt) | tar -zt
+        sudo tar -C / -c "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc" "--exclude=/dev" "--exclude=/run" "--exclude=/var" usr/bin | tee >(sha256sum > sha.txt) | gzip -9 -c | tee >(sha256sum > sha2.txt) | tar -zt
         echo "Sha is"
         cat sha.txt
         echo "Sha2 is"
