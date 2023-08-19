@@ -39,7 +39,9 @@ jobs:
                 console.log(JSON.stringify(resp.status));
                 location = resp.headers.get("Location");
                 console.log("NEXT_URL:" + location);
-                resp = await fetch("https://ghcr.io" + location + "?digest=" + (await fs.promises.readFile("sha2.txt", { encoding: "utf-8" })).trim(), { method: "PUT", redirect: "manual", duplex: "half", credentials: "include", headers: {
+                var url = "https://ghcr.io" + location + "?digest=" + (await fs.promises.readFile("sha2.txt", { encoding: "utf-8" })).trim();
+                console.log("url:" + url);
+                resp = await fetch(url, { method: "PUT", redirect: "manual", duplex: "half", credentials: "include", headers: {
                     "Content-Type": "application/octet-stream",
                     "Content-Length": "0",
                     "Authorization": "Bearer ${{ fromjson(steps.auth.outputs.resp).token }}"
