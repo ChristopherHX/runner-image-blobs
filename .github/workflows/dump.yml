@@ -8,15 +8,9 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: 20
-    - name: Auth for push
-      id: auth
+    - name: Dump /etc/environment
       run: |
-        echo "resp<<EOF" >> "$GITHUB_OUTPUT"
-        curl "https://ghcr.io/token?service=registry.docker.io&scope=repository:${{ github.repository_owner }}/runner-images:pull,push" \
-        -u "${{ github.actor }}:${{ github.token }}" >> "$GITHUB_OUTPUT"
-        echo "" >> "$GITHUB_OUTPUT"
-        echo "EOF" >> "$GITHUB_OUTPUT"
-        cat "$GITHUB_OUTPUT"
+        cat /etc/environment
       shell: bash
     - name: Create Script
       run: |
@@ -61,11 +55,19 @@ jobs:
                 console.log("NEXT_URL:" + location);
 
                 clearInterval(token);
+
+                var environment = await fs.promises.readFile("/etc/environment", { encoding: "utf-8" }));
+                var envmap = {};
+                for(var line of environment.split("\n")) {
+                  var i = str.indexOf("=");
+                  envmap[str.substring(0, i)] = str.substring(i + 1);
+                }
                 
                 var config = {
                   "architecture": "amd64",
                   "os": "linux",
                   "config": {
+                    "Env": envmap,
                     "Entrypoint": ["bash"]
                   },
                   "rootfs": {
@@ -75,6 +77,7 @@ jobs:
                     ]
                   }
                 };
+
                 var strconfig = JSON.stringify(config);
                 console.log(strconfig);
                 var crypto = require('crypto');
@@ -152,17 +155,3 @@ jobs:
         echo "Sha2 is"
         cat sha2.txt
       shell: bash
-    # - name: Auth 2
-    #   id: auth2
-    #   run: |
-    #     echo "resp<<EOF" >> "$GITHUB_OUTPUT"
-    #     curl "https://ghcr.io/token?service=registry.docker.io&scope=repository:${{ github.repository_owner }}/runner-images:pull,push" \
-    #     -u "${{ github.actor }}:${{ github.token }}" >> "$GITHUB_OUTPUT"
-    #     echo "" >> "$GITHUB_OUTPUT"
-    #     echo "EOF" >> "$GITHUB_OUTPUT"
-    #     cat "$GITHUB_OUTPUT"
-    #   shell: bash
-    # - name: Commit Image
-    #   run: |
-    #     curl -v -X PATCH "${{ steps.dump_image.outputs.NEXT_URL }}&digest=sha256:$(cat sha2.txt)" -H "Authorization: Bearer ${{ fromjson(steps.auth2.outputs.resp).token }}"
-    #   shell: bash
