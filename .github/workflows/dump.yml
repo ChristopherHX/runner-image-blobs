@@ -39,8 +39,9 @@ jobs:
                 console.log(JSON.stringify(resp.status));
                 location = resp.headers.get("Location");
                 console.log("NEXT_URL:" + location);
-                resp = await fetch("https://ghcr.io" + location + "?digest=" + (await fs.promises.readFile("sha2.txt", { encoding: "utf-8" })).trim(), { method: "PUT", redirect: "manual", body: process.stdin, duplex: "half", credentials: "include", headers: {
+                resp = await fetch("https://ghcr.io" + location + "?digest=" + (await fs.promises.readFile("sha2.txt", { encoding: "utf-8" })).trim(), { method: "PUT", redirect: "manual", duplex: "half", credentials: "include", headers: {
                     "Content-Type": "application/octet-stream",
+                    "Content-Length": "0",
                     "Authorization": "Bearer ${{ fromjson(steps.auth.outputs.resp).token }}"
                 } });
                 console.log(JSON.stringify(resp.status));
@@ -63,7 +64,7 @@ jobs:
       run: |
         touch sha.txt
         touch sha2.txt
-        sudo tar -C / -c "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc" "--exclude=/dev" "--exclude=/run" "--exclude=/var" usr/bin | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
+        sudo tar -C / -c "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc" "--exclude=/dev" "--exclude=/run" "--exclude=/var" usr/bin/clang | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
         echo "Sha is"
         cat sha.txt
         echo "Sha2 is"
