@@ -26,12 +26,16 @@ jobs:
         }, 5000);
         (async () => {
             try {
-                var resp = await fetch("https://ghcr.io/token?service=registry.docker.io&scope=repository:${{ github.repository_owner }}/runner-images:pull,push", { method: "GET", redirect: "manual", credentials: "include", headers: {
-                    "Authorization": "Basic " + btoa("${{ github.actor }}:${{ github.token }}")
-                } });
-                console.log(JSON.stringify(resp.status));
-                var token = (await resp.json()).token;
-                resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/blobs/uploads/", { method: "POST", redirect: "manual", body: "", credentials: "include", headers: {
+                var token = "";
+                var refresh = async () {
+                  var resp = await fetch("https://ghcr.io/token?service=registry.docker.io&scope=repository:${{ github.repository_owner }}/runner-images:pull,push",  { method: "GET", redirect: "manual", credentials: "include", headers: {
+                      "Authorization": "Basic " + btoa("${{ github.actor }}:${{ github.token }}")
+                  } });
+                  console.log(JSON.stringify(resp.status));
+                  token = (await resp.json()).token;
+                }
+                await refresh();
+                var resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/blobs/uploads/", { method: "POST", redirect: "manual", body: "", credentials: "include", headers: {
                     "Authorization": "Bearer " + token
                 } });
                 console.log(JSON.stringify(resp.status));
@@ -44,11 +48,7 @@ jobs:
                 console.log(JSON.stringify(resp.status));
                 location = resp.headers.get("Location");
                 console.log("NEXT_URL:" + location);
-                resp = await fetch("https://ghcr.io/token?service=registry.docker.io&scope=repository:${{ github.repository_owner }}/runner-images:pull,push",  { method: "GET", redirect: "manual", credentials: "include", headers: {
-                    "Authorization": "Basic " + btoa("${{ github.actor }}:${{ github.token }}")
-                } });
-                console.log(JSON.stringify(resp.status));
-                token = (await resp.json()).token;
+                await refresh();
                 var url = "https://ghcr.io" + location + "?digest=sha256:" + (await fs.promises.readFile("sha2.txt", { encoding: "utf-8" })).trim();
                 console.log("url:" + url);
                 resp = await fetch(url, { method: "PUT", redirect: "manual", duplex: "half", credentials: "include", headers: {
@@ -59,8 +59,78 @@ jobs:
                 console.log(JSON.stringify(resp.status));
                 location = resp.headers.get("Location");
                 console.log("NEXT_URL:" + location);
-                //await fs.promises.writeFile(process.env.GITHUB_OUTPUT, "NEXT_URL=https://ghcr.io" + location, { encoding: "utf-8" });
 
+                clearInterval(token);
+                
+                var config = {
+                  "architecture": "amd64",
+                  "os": "linux",
+                  "config": {
+                    "Entrypoint": ["bash"]
+                  },
+                  "rootfs": {
+                    "type": "layers",
+                    "diff_ids": [
+                      "sha256:" + (await fs.promises.readFile("sha.txt", { encoding: "utf-8" })).trim()
+                    ]
+                  }
+                };
+                var strconfig = JSON.stringify(config);
+                console.log(strconfig);
+                var crypto = require('crypto');
+                var hash = crypto.createHash('sha256').update(strconfig).digest('base64');
+                await refresh();
+                resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/blobs/uploads/", { method: "POST", redirect: "manual", body: "", credentials: "include", headers: {
+                    "Authorization": "Bearer " + token
+                } });
+                console.log(JSON.stringify(resp.status));
+                location = resp.headers.get("Location");
+                console.log("NEXT_URL:" + location);
+                resp = await fetch("https://ghcr.io" + location, { method: "PATCH", redirect: "manual", body: strconfig, duplex: "half", credentials: "include", headers: {
+                    "Content-Type": "application/octet-stream",
+                    "Authorization": "Bearer " + token
+                } });
+                console.log(JSON.stringify(resp.status));
+                location = resp.headers.get("Location");
+                console.log("NEXT_URL:" + location);
+                await refresh();
+                url = "https://ghcr.io" + location + "?digest=sha256:" + hash;
+                console.log("url:" + url);
+                resp = await fetch(url, { method: "PUT", redirect: "manual", duplex: "half", credentials: "include", headers: {
+                    "Content-Type": "application/octet-stream",
+                    "Content-Length": "0",
+                    "Authorization": "Bearer " + token
+                } });
+                console.log(JSON.stringify(resp.status));
+                location = resp.headers.get("Location");
+                console.log("NEXT_URL:" + location);
+
+                var manifest = {
+                  "schemaVersion": 2,
+                  "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+                  "config": {
+                    "mediaType": "application/vnd.docker.container.image.v1+json",
+                    "size": strconfig.length,
+                    "digest": "sha256:" + hash
+                  },
+                  "layers": [
+                    {
+                      "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+                      "size": process.stdin.bytesRead,
+                      "digest": "sha256:" + (await fs.promises.readFile("sha2.txt", { encoding: "utf-8" })).trim()
+                    }
+                  ]
+                };
+                var strmanifest = JSON.stringify(manifest);
+                console.log(strmanifest);
+                
+                await refresh();
+                resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/manifests/latest", { method: "PUT", redirect: "manual", body: strmanifest, duplex: "half", credentials: "include", headers: {
+                    "Content-Type": "application/vnd.docker.distribution.manifest.v2+json",
+                    "Authorization": "Bearer " + token
+                } });
+                console.log(JSON.stringify(resp.status));
+                
                 process.exitCode = 0;
             } catch(ex) {
                 console.log(ex);
