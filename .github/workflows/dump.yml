@@ -27,18 +27,18 @@ jobs:
         (async () => {
             try {
                 var resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/blobs/uploads/", { method: "POST", redirect: "manual", body: "", credentials: "include", headers: {
-                    "Authentication": "Bearer ${{ fromjson(steps.auth.outputs.resp).token }}"
+                    "Authorization": "Bearer ${{ fromjson(steps.auth.outputs.resp).token }}"
                 } });
                 console.log(JSON.stringify(resp.status));
                 var location = resp.headers.get("Location");
                 console.log("NEXT_URL:" + location);
-                resp = await fetch(location, { method: "PATCH", redirect: "manual", body: process.stdin, credentials: "include", headers: {
+                resp = await fetch("https://ghcr.io" + location, { method: "PATCH", redirect: "manual", body: process.stdin, credentials: "include", headers: {
                     "Content-Type": "application/octet-stream",
-                    "Authentication": "Bearer ${{ fromjson(steps.auth.outputs.resp).token }}"
+                    "Authorization": "Bearer ${{ fromjson(steps.auth.outputs.resp).token }}"
                 } });
                 location = resp.headers.get("Location");
                 console.log("NEXT_URL:" + location);
-                await fs.promises.writeFile(process.env.GITHUB_OUTPUT, "NEXT_URL=" + location, { encoding: "utf-8" });
+                await fs.promises.writeFile(process.env.GITHUB_OUTPUT, "NEXT_URL=https://ghcr.io" + location, { encoding: "utf-8" });
                 process.exitCode = 0;
             } catch(ex) {
                 console.log(ex);
