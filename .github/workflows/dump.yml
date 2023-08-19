@@ -4,6 +4,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions: write-all
     steps:
+    - name: Setup node
+      uses: actions/setup-node@v3
+      with:
+        node-version: 20
     - name: Auth for push
       id: auth
       run: |
@@ -14,29 +18,46 @@ jobs:
         echo "EOF" >> "$GITHUB_OUTPUT"
         cat "$GITHUB_OUTPUT"
       shell: bash
+    - name: Create Script
+      run: |
+        var fs = require("fs");
+        var token = setTimeout(() => {
+            console.log("Bytes read: " + process.stdin.bytesRead);
+        }, 5000);
+        (async () => {
+            try {
+                var resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/blobs/uploads/", { method: "POST", redirect: "manual", body: "", credentials: "include", headers: {
+                    "Authentication": "Bearer ${{ fromjson(steps.auth.outputs.resp).token }}"
+                } });
+                var location = resp.headers.get("Location");
+                console.log("NEXT_URL:" + location);
+                resp = await fetch(location, { method: "PATCH", redirect: "manual", body: process.stdin, credentials: "include", headers: {
+                    "Content-Type": "application/octet-stream",
+                    "Authentication": "Bearer ${{ fromjson(steps.auth.outputs.resp).token }}"
+                } });
+                location = resp.headers.get("Location");
+                console.log("NEXT_URL:" + location);
+                await fs.promises.writeFile(process.env.GITHUB_OUTPUT, "NEXT_URL=" + location, { encoding: "utf-8" });
+                process.exitCode = 0;
+            } catch(ex) {
+                console.log(ex);
+                process.exitCode = 1;
+            } finally {
+                clearTimeout(token);
+            }
+            process.exit();
+        })()
+      shell: mv {0} script.js
     - name: Dump Image
       id: dump_image
       run: |
-        curl -v -o /dev/null -w "%{redirect_url}\n" https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/blobs/uploads/ -H "Authorization: Bearer ${{ fromjson(steps.auth.outputs.resp).token }}" -d ''
-        return 1
-        NEXT_URL="$(curl -v -o /dev/null -w "%{redirect_url}\n" https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/blobs/uploads/ -H "Authorization: Bearer ${{ fromjson(steps.auth.outputs.resp).token }}" -d '')"
-        echo "NEXT_URL=$NEXT_URL"
-        if [[ "$NEXT_URL" = "" ]]; then
-            echo "NEXT_URL empty?????"
-            NEXT_URL="$(curl -v -X POST -w "%{redirect_url}\n" https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/blobs/uploads/ -H "Authorization: Bearer ${{ fromjson(steps.auth.outputs.resp).token }}")"
-            echo "NEXT_URL=$NEXT_URL"
-        fi
-        NEXT_URL="https://ghcr.io/$NEXT_URL"
         touch sha.txt
         touch sha2.txt
-        sudo tar -C / -c "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc" "--exclude=/dev" "--exclude=/run" "--exclude=/var" usr/bin/clang | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | NEXT_URL="$(curl -X PATCH -v -o /dev/null -w "%{redirect_url}\n" "$NEXT_URL" -H "Content-Type: application/octet-stream" -H "Authorization: Bearer ${{ fromjson(steps.auth.outputs.resp).token }}" --data-binary "@-")" 
+        sudo tar -C / -c "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc" "--exclude=/dev" "--exclude=/run" "--exclude=/var" usr/bin/clang | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
         echo "Sha is"
         cat sha.txt
         echo "Sha2 is"
         cat sha2.txt
-        echo "NEXT_URL=$NEXT_URL"
-        NEXT_URL="https://ghcr.io/$NEXT_URL"
-        echo "NEXT_URL=$NEXT_URL" > "$GITHUB_OUTPUT"
       shell: bash
     - name: Auth 2
       id: auth2
