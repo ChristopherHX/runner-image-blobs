@@ -26,7 +26,7 @@ jobs:
         }, 5000);
         (async () => {
             try {
-                var resp = await fetch("https://ghcr.io/token?service=registry.docker.io&scope=repository:${{ github.repository_owner }}/runner-images:pull,push", { method: "POST", redirect: "manual", body: "", credentials: "include", headers: {
+                var resp = await fetch("https://ghcr.io/token?service=registry.docker.io&scope=repository:${{ github.repository_owner }}/runner-images:pull,push", { method: "GET", redirect: "manual", credentials: "include", headers: {
                     "Authorization": "Basic " + btoa("${{ github.actor }}:${{ github.token }}")
                 } });
                 console.log(JSON.stringify(resp.status));
@@ -44,11 +44,11 @@ jobs:
                 console.log(JSON.stringify(resp.status));
                 location = resp.headers.get("Location");
                 console.log("NEXT_URL:" + location);
-                var resp = await fetch("https://ghcr.io/token?service=registry.docker.io&scope=repository:${{ github.repository_owner }}/runner-images:pull,push", { method: "POST", redirect: "manual", body: "", credentials: "include", headers: {
+                resp = await fetch("https://ghcr.io/token?service=registry.docker.io&scope=repository:${{ github.repository_owner }}/runner-images:pull,push",  { method: "GET", redirect: "manual", credentials: "include", headers: {
                     "Authorization": "Basic " + btoa("${{ github.actor }}:${{ github.token }}")
                 } });
                 console.log(JSON.stringify(resp.status));
-                var token = (await resp.json()).token;
+                token = (await resp.json()).token;
                 var url = "https://ghcr.io" + location + "?digest=sha256:" + (await fs.promises.readFile("sha2.txt", { encoding: "utf-8" })).trim();
                 console.log("url:" + url);
                 resp = await fetch(url, { method: "PUT", redirect: "manual", duplex: "half", credentials: "include", headers: {
