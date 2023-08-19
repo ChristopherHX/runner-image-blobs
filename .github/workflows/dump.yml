@@ -4,17 +4,39 @@ jobs:
     runs-on: ubuntu-latest
     permissions: write-all
     steps:
+    - name: Auth for push
+      id: auth
+      run: |
+        echo "resp<<EOF" >> "$GITHUB_OUTPUT"
+        curl "https://ghcr.io/token?service=registry.docker.io&scope=repository:${{ github.repository_owner }}/runner-images:pull,push" \
+        -u "${{ github.actor }}:${{ github.token }}" >> "$GITHUB_OUTPUT"
+        echo "" >> "$GITHUB_OUTPUT"
+        echo "EOF" >> "$GITHUB_OUTPUT"
+        cat "$GITHUB_OUTPUT"
     - name: Dump Image
-      run: |  
-        curl "https://ghcr.io/token?service=registry.docker.io&scope=repository:${{ github.repository_owner}}/runner-images:pull,push" \
-        -u "${{ github.actor }}:${{ github.token }}" \
-        -v
-        exit 0
+      id: dump_image
+      run: |
+        NEXT_URL="$(curl -v -o /dev/null -w "%{redirect_url}\n" https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/blobs/uploads/ -H "Authorization: Bearer ${{ fromjson(steps.auth.outputs.resp).token }}" -d '')"
+        echo "NEXT_URL=$NEXT_URL"
         touch sha.txt
         touch sha2.txt
-        sudo tar -C / -c "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc" "--exclude=/dev" "--exclude=/run" "--exclude=/var" usr/bin | tee >(sha256sum > sha.txt) | gzip -9 -c | tee >(sha256sum > sha2.txt) | tar -zt
+        sudo tar -C / -c "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc" "--exclude=/dev" "--exclude=/run" "--exclude=/var" . | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | NEXT_URL="$(curl -X PATCH -v -o /dev/null -w "%{redirect_url}\n" "$NEXT_URL" -H "Content-Type: application/octet-stream" -H "Authorization: Bearer ${{ fromjson(steps.auth.outputs.resp).token }}" --data-binary "@-")" 
         echo "Sha is"
         cat sha.txt
         echo "Sha2 is"
         cat sha2.txt
+        echo "NEXT_URL=$NEXT_URL"
+        echo "NEXT_URL=$NEXT_URL" > "$GITHUB_OUTPUT"
       shell: bash
+    - name: Auth 2
+      id: auth2
+      run: |
+        echo "resp<<EOF" >> "$GITHUB_OUTPUT"
+        curl "https://ghcr.io/token?service=registry.docker.io&scope=repository:${{ github.repository_owner }}/runner-images:pull,push" \
+        -u "${{ github.actor }}:${{ github.token }}" >> "$GITHUB_OUTPUT"
+        echo "" >> "$GITHUB_OUTPUT"
+        echo "EOF" >> "$GITHUB_OUTPUT"
+        cat "$GITHUB_OUTPUT"
+    - name: Commit Image
+      run: |
+        curl -v -X PUT "${{ steps.dump_image.outputs.NEXT_URL }}&digest=sha256:$(cat sha2.txt)" -H "Authorization: Bearer ${{ fromjson(steps.auth2.outputs.resp).token }}")"
