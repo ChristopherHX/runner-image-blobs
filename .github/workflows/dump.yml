@@ -20,7 +20,7 @@ jobs:
         echo "NEXT_URL=$NEXT_URL"
         touch sha.txt
         touch sha2.txt
-        sudo tar -C / -c "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc" "--exclude=/dev" "--exclude=/run" "--exclude=/var" . | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | NEXT_URL="$(curl -X PATCH -v -o /dev/null -w "%{redirect_url}\n" "$NEXT_URL" -H "Content-Type: application/octet-stream" -H "Authorization: Bearer ${{ fromjson(steps.auth.outputs.resp).token }}" --data-binary "@-")" 
+        sudo tar -C / -c "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc" "--exclude=/dev" "--exclude=/run" "--exclude=/var" usr/bin/clang | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | NEXT_URL="$(curl -X PATCH -v -o /dev/null -w "%{redirect_url}\n" "$NEXT_URL" -H "Content-Type: application/octet-stream" -H "Authorization: Bearer ${{ fromjson(steps.auth.outputs.resp).token }}" --data-binary "@-")" 
         echo "Sha is"
         cat sha.txt
         echo "Sha2 is"
