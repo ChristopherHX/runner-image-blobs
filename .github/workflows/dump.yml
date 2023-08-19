@@ -13,11 +13,18 @@ jobs:
         echo "" >> "$GITHUB_OUTPUT"
         echo "EOF" >> "$GITHUB_OUTPUT"
         cat "$GITHUB_OUTPUT"
+      shell: bash
     - name: Dump Image
       id: dump_image
       run: |
         NEXT_URL="$(curl -v -o /dev/null -w "%{redirect_url}\n" https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/blobs/uploads/ -H "Authorization: Bearer ${{ fromjson(steps.auth.outputs.resp).token }}" -d '')"
         echo "NEXT_URL=$NEXT_URL"
+        if [[ "$NEXT_URL" = "" ]]; then
+            echo "NEXT_URL empty?????"
+            NEXT_URL="$(curl -v -X POST -w "%{redirect_url}\n" https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/blobs/uploads/ -H "Authorization: Bearer ${{ fromjson(steps.auth.outputs.resp).token }}")"
+            echo "NEXT_URL=$NEXT_URL"
+        fi
+        NEXT_URL="https://ghcr.io/$NEXT_URL"
         touch sha.txt
         touch sha2.txt
         sudo tar -C / -c "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc" "--exclude=/dev" "--exclude=/run" "--exclude=/var" usr/bin/clang | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | NEXT_URL="$(curl -X PATCH -v -o /dev/null -w "%{redirect_url}\n" "$NEXT_URL" -H "Content-Type: application/octet-stream" -H "Authorization: Bearer ${{ fromjson(steps.auth.outputs.resp).token }}" --data-binary "@-")" 
@@ -26,6 +33,7 @@ jobs:
         echo "Sha2 is"
         cat sha2.txt
         echo "NEXT_URL=$NEXT_URL"
+        NEXT_URL="https://ghcr.io/$NEXT_URL"
         echo "NEXT_URL=$NEXT_URL" > "$GITHUB_OUTPUT"
       shell: bash
     - name: Auth 2
@@ -37,6 +45,8 @@ jobs:
         echo "" >> "$GITHUB_OUTPUT"
         echo "EOF" >> "$GITHUB_OUTPUT"
         cat "$GITHUB_OUTPUT"
+      shell: bash
     - name: Commit Image
       run: |
         curl -v -X PUT "${{ steps.dump_image.outputs.NEXT_URL }}&digest=sha256:$(cat sha2.txt)" -H "Authorization: Bearer ${{ fromjson(steps.auth2.outputs.resp).token }}")"
+      shell: bash
