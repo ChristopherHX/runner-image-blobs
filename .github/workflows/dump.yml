@@ -39,7 +39,15 @@ jobs:
                 console.log(JSON.stringify(resp.status));
                 location = resp.headers.get("Location");
                 console.log("NEXT_URL:" + location);
-                await fs.promises.writeFile(process.env.GITHUB_OUTPUT, "NEXT_URL=https://ghcr.io" + location, { encoding: "utf-8" });
+                resp = await fetch("https://ghcr.io" + location + "?digest=" + (await fs.promises.readFile("sha2.txt", { encoding: "utf-8" })).trim(), { method: "PUT", redirect: "manual", body: process.stdin, duplex: "half", credentials: "include", headers: {
+                    "Content-Type": "application/octet-stream",
+                    "Authorization": "Bearer ${{ fromjson(steps.auth.outputs.resp).token }}"
+                } });
+                console.log(JSON.stringify(resp.status));
+                location = resp.headers.get("Location");
+                console.log("NEXT_URL:" + location);
+                //await fs.promises.writeFile(process.env.GITHUB_OUTPUT, "NEXT_URL=https://ghcr.io" + location, { encoding: "utf-8" });
+
                 process.exitCode = 0;
             } catch(ex) {
                 console.log(ex);
@@ -61,17 +69,17 @@ jobs:
         echo "Sha2 is"
         cat sha2.txt
       shell: bash
-    - name: Auth 2
-      id: auth2
-      run: |
-        echo "resp<<EOF" >> "$GITHUB_OUTPUT"
-        curl "https://ghcr.io/token?service=registry.docker.io&scope=repository:${{ github.repository_owner }}/runner-images:pull,push" \
-        -u "${{ github.actor }}:${{ github.token }}" >> "$GITHUB_OUTPUT"
-        echo "" >> "$GITHUB_OUTPUT"
-        echo "EOF" >> "$GITHUB_OUTPUT"
-        cat "$GITHUB_OUTPUT"
-      shell: bash
-    - name: Commit Image
-      run: |
-        curl -v -X PATCH "${{ steps.dump_image.outputs.NEXT_URL }}&digest=sha256:$(cat sha2.txt)" -H "Authorization: Bearer ${{ fromjson(steps.auth2.outputs.resp).token }}"
-      shell: bash
+    # - name: Auth 2
+    #   id: auth2
+    #   run: |
+    #     echo "resp<<EOF" >> "$GITHUB_OUTPUT"
+    #     curl "https://ghcr.io/token?service=registry.docker.io&scope=repository:${{ github.repository_owner }}/runner-images:pull,push" \
+    #     -u "${{ github.actor }}:${{ github.token }}" >> "$GITHUB_OUTPUT"
+    #     echo "" >> "$GITHUB_OUTPUT"
+    #     echo "EOF" >> "$GITHUB_OUTPUT"
+    #     cat "$GITHUB_OUTPUT"
+    #   shell: bash
+    # - name: Commit Image
+    #   run: |
+    #     curl -v -X PATCH "${{ steps.dump_image.outputs.NEXT_URL }}&digest=sha256:$(cat sha2.txt)" -H "Authorization: Bearer ${{ fromjson(steps.auth2.outputs.resp).token }}"
+    #   shell: bash
