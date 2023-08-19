@@ -21,7 +21,7 @@ jobs:
     - name: Create Script
       run: |
         var fs = require("fs");
-        var token = setTimeout(() => {
+        var token = setInterval(() => {
             console.log("Bytes read: " + process.stdin.bytesRead);
         }, 5000);
         (async () => {
@@ -36,6 +36,7 @@ jobs:
                     "Content-Type": "application/octet-stream",
                     "Authorization": "Bearer ${{ fromjson(steps.auth.outputs.resp).token }}"
                 } });
+                console.log(JSON.stringify(resp.status));
                 location = resp.headers.get("Location");
                 console.log("NEXT_URL:" + location);
                 await fs.promises.writeFile(process.env.GITHUB_OUTPUT, "NEXT_URL=https://ghcr.io" + location, { encoding: "utf-8" });
@@ -44,7 +45,7 @@ jobs:
                 console.log(ex);
                 process.exitCode = 1;
             } finally {
-                clearTimeout(token);
+                clearInterval(token);
             }
             process.exit();
         })()
