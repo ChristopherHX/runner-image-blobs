@@ -67,7 +67,7 @@ jobs:
                 for(var line of environment.split("\n")) {
                   if(line.length > 0) {
                     var i = line.indexOf("=");
-                    envmap.push(line.substring(0, i) + "=" + trimQuotes(line.substring(i + 1));
+                    envmap.push(line.substring(0, i) + "=" + trimQuotes(line.substring(i + 1)));
                   }
                 }
                 
