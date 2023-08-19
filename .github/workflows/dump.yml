@@ -29,6 +29,7 @@ jobs:
                 var resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/blobs/uploads/", { method: "POST", redirect: "manual", body: "", credentials: "include", headers: {
                     "Authentication": "Bearer ${{ fromjson(steps.auth.outputs.resp).token }}"
                 } });
+                console.log(JSON.stringify(resp));
                 var location = resp.headers.get("Location");
                 console.log("NEXT_URL:" + location);
                 resp = await fetch(location, { method: "PATCH", redirect: "manual", body: process.stdin, credentials: "include", headers: {
