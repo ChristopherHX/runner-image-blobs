@@ -56,7 +56,7 @@ jobs:
 
                 clearInterval(token);
 
-                var environment = await fs.promises.readFile("/etc/environment", { encoding: "utf-8" }));
+                var environment = await fs.promises.readFile("/etc/environment", { encoding: "utf-8" });
                 var envmap = {};
                 for(var line of environment.split("\n")) {
                   var i = str.indexOf("=");
