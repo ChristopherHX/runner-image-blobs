@@ -27,7 +27,7 @@ jobs:
         (async () => {
             try {
                 var token = "";
-                var refresh = async () {
+                var refresh = async () => {
                   var resp = await fetch("https://ghcr.io/token?service=registry.docker.io&scope=repository:${{ github.repository_owner }}/runner-images:pull,push",  { method: "GET", redirect: "manual", credentials: "include", headers: {
                       "Authorization": "Basic " + btoa("${{ github.actor }}:${{ github.token }}")
                   } });
