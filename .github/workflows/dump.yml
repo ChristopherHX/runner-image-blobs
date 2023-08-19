@@ -26,25 +26,35 @@ jobs:
         }, 5000);
         (async () => {
             try {
-                var resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/blobs/uploads/", { method: "POST", redirect: "manual", body: "", credentials: "include", headers: {
-                    "Authorization": "Bearer ${{ fromjson(steps.auth.outputs.resp).token }}"
+                var resp = await fetch("https://ghcr.io/token?service=registry.docker.io&scope=repository:${{ github.repository_owner }}/runner-images:pull,push", { method: "POST", redirect: "manual", body: "", credentials: "include", headers: {
+                    "Authorization": "Basic " + btoa("${{ github.actor }}:${{ github.token }}")
+                } });
+                console.log(JSON.stringify(resp.status));
+                var token = (await resp.json()).token;
+                resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/blobs/uploads/", { method: "POST", redirect: "manual", body: "", credentials: "include", headers: {
+                    "Authorization": "Bearer " + token
                 } });
                 console.log(JSON.stringify(resp.status));
                 var location = resp.headers.get("Location");
                 console.log("NEXT_URL:" + location);
                 resp = await fetch("https://ghcr.io" + location, { method: "PATCH", redirect: "manual", body: process.stdin, duplex: "half", credentials: "include", headers: {
                     "Content-Type": "application/octet-stream",
-                    "Authorization": "Bearer ${{ fromjson(steps.auth.outputs.resp).token }}"
+                    "Authorization": "Bearer " + token
                 } });
                 console.log(JSON.stringify(resp.status));
                 location = resp.headers.get("Location");
                 console.log("NEXT_URL:" + location);
+                var resp = await fetch("https://ghcr.io/token?service=registry.docker.io&scope=repository:${{ github.repository_owner }}/runner-images:pull,push", { method: "POST", redirect: "manual", body: "", credentials: "include", headers: {
+                    "Authorization": "Basic " + btoa("${{ github.actor }}:${{ github.token }}")
+                } });
+                console.log(JSON.stringify(resp.status));
+                var token = (await resp.json()).token;
                 var url = "https://ghcr.io" + location + "?digest=sha256:" + (await fs.promises.readFile("sha2.txt", { encoding: "utf-8" })).trim();
                 console.log("url:" + url);
                 resp = await fetch(url, { method: "PUT", redirect: "manual", duplex: "half", credentials: "include", headers: {
                     "Content-Type": "application/octet-stream",
                     "Content-Length": "0",
-                    "Authorization": "Bearer ${{ fromjson(steps.auth.outputs.resp).token }}"
+                    "Authorization": "Bearer " + token
                 } });
                 console.log(JSON.stringify(resp.status));
                 location = resp.headers.get("Location");
