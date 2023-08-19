@@ -17,6 +17,8 @@ jobs:
     - name: Dump Image
       id: dump_image
       run: |
+        curl -v -o /dev/null -w "%{redirect_url}\n" https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/blobs/uploads/ -H "Authorization: Bearer ${{ fromjson(steps.auth.outputs.resp).token }}" -d ''
+        return 1
         NEXT_URL="$(curl -v -o /dev/null -w "%{redirect_url}\n" https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/blobs/uploads/ -H "Authorization: Bearer ${{ fromjson(steps.auth.outputs.resp).token }}" -d '')"
         echo "NEXT_URL=$NEXT_URL"
         if [[ "$NEXT_URL" = "" ]]; then
