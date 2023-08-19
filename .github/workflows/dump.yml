@@ -72,5 +72,5 @@ jobs:
       shell: bash
     - name: Commit Image
       run: |
-        curl -v -X PUT "${{ steps.dump_image.outputs.NEXT_URL }}&digest=sha256:$(cat sha2.txt)" -H "Authorization: Bearer ${{ fromjson(steps.auth2.outputs.resp).token }}")"
+        curl -v -X PUT "${{ steps.dump_image.outputs.NEXT_URL }}&digest=sha256:$(cat sha2.txt)" -H "Authorization: Bearer ${{ fromjson(steps.auth2.outputs.resp).token }}"
       shell: bash
