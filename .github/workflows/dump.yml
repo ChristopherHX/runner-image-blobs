@@ -157,7 +157,7 @@ jobs:
       run: |
         touch sha.txt
         touch sha2.txt
-        sudo tar -C / -c "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc" "--exclude=/dev" "--exclude=/run" "--exclude=/sys" "--exclude=/var" / | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
+        sudo tar -C / -c "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc" "--exclude=/dev" "--exclude=/run" "--exclude=/sys" "--exclude=/tmp" "--exclude=/var" / | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
         echo "Sha is"
         cat sha.txt
         echo "Sha2 is"
