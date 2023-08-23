@@ -85,7 +85,7 @@ jobs:
 
                 if(process.env.DIFF_IDS) {
                   var diff_ids = JSON.parse(process.env.DIFF_IDS);
-                  config.rootfs.diff_ids = layers.concat(config.rootfs.diff_ids);
+                  config.rootfs.diff_ids = diff_ids.concat(config.rootfs.diff_ids);
                 }
                 if(process.env.UPLOAD_LAYER) {
                   var diff_id = "sha256:" + (await fs.promises.readFile("sha.txt", { encoding: "utf-8" })).trim()
@@ -177,26 +177,10 @@ jobs:
     - name: Dump /usr/local
       id: usr-local
       run: |
-        sudo tar -C / -c /usr/local | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
+        sudo tar -C / -c "--exclude=/usr/local/lib/android" /usr/local | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
       env:
         UPLOAD_LAYER: 1
         TAG: runner-usr-local${{ env.SUFFIX }}
-        DIFF_IDS: |
-          [
-            ${{ steps.baseImage.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }}
-          ]
-      shell: bash
-    - name: Dump /snap
-      id: snap
-      run: |
-        sudo tar -C / -c /snap | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
-      env:
-        UPLOAD_LAYER: 1
-        TAG: runner-snap${{ env.SUFFIX }}
         DIFF_IDS: |
           [
             ${{ steps.baseImage.outputs.diff_id }}
@@ -384,6 +368,38 @@ jobs:
             ${{ steps.baseImage.outputs.layer }}
           ]
       shell: bash
+    - name: Dump android
+      id: android
+      run: |
+        sudo tar -C / -c /usr/local/lib/android | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
+      env:
+        UPLOAD_LAYER: 1
+        TAG: runner-usr-android${{ env.SUFFIX }}
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }}
+          ]
+      shell: bash
+    - name: Dump /snap
+      id: snap
+      run: |
+        sudo tar -C / -c /snap | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
+      env:
+        UPLOAD_LAYER: 1
+        TAG: runner-snap${{ env.SUFFIX }}
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }}
+          ]
+      shell: bash
     - name: Upload runner-use-local-opt
       run: |
         node script.js
@@ -422,7 +438,8 @@ jobs:
             ${{ steps.gcc.outputs.diff_id }},
             ${{ steps.llvm.outputs.diff_id }},
             ${{ steps.firefox.outputs.diff_id }},
-            ${{ steps.python3.outputs.diff_id }}
+            ${{ steps.python3.outputs.diff_id }},
+            ${{ steps.android.outputs.diff_id }}
           ]
         LAYERS: |
           [
@@ -439,6 +456,7 @@ jobs:
             ${{ steps.gcc.outputs.layer }},
             ${{ steps.llvm.outputs.layer }},
             ${{ steps.firefox.outputs.layer }},
-            ${{ steps.python3.outputs.layer }}
+            ${{ steps.python3.outputs.layer }},
+            ${{ steps.android.outputs.layer }}
           ]
       shell: bash
