@@ -90,7 +90,7 @@ jobs:
                 if(process.env.UPLOAD_LAYER) {
                   var diff_id = "sha256:" + (await fs.promises.readFile("sha.txt", { encoding: "utf-8" })).trim();
                   config.rootfs.diff_ids.push(diff_id);
-                  await fs.promises.writeFile(process.env.GITHUB_OUTPUT, "diff_id=" + JSON.stringify(diff_id) + "\n", { encoding: "utf-8" });
+                  await fs.promises.appendFile(process.env.GITHUB_OUTPUT, "diff_id=" + JSON.stringify(diff_id) + "\n", { encoding: "utf-8" });
                 }
 
                 var strconfig = JSON.stringify(config);
@@ -144,7 +144,7 @@ jobs:
                     "digest": "sha256:" + (await fs.promises.readFile("sha2.txt", { encoding: "utf-8" })).trim()
                   };
                   manifest.layers.push(layer);
-                  await fs.promises.writeFile(process.env.GITHUB_OUTPUT, "layer=" + JSON.stringify(layer) + "\n", { encoding: "utf-8" })
+                  await fs.promises.appendFile(process.env.GITHUB_OUTPUT, "layer=" + JSON.stringify(layer) + "\n", { encoding: "utf-8" })
                 }
                 var strmanifest = JSON.stringify(manifest);
                 console.log(strmanifest);
