@@ -169,7 +169,7 @@ jobs:
     - name: Dump Base Image
       id: baseImage
       run: |
-        sudo tar -C / -c "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc" "--exclude=/dev" "--exclude=/run" "--exclude=/sys" "--exclude=/tmp" "--exclude=/opt" "--exclude=/var" "--exclude=/usr/local"  "--exclude=/mnt" "--exclude=/snap" "--exclude=/boot" "--exclude=/data" "--exclude=/boot" "--exclude=/imagegeneration/installers/*.tar.*" "--exclude=/home/runner/runners" "--exclude=/home/runner/work" "--exclude=/usr/share/dotnet" "--exclude=/usr/share/swift" "--exclude=/usr/share/miniconda" "--exclude=/usr/lib/google-cloud-sdk" "--exclude=/usr/lib/jvm" "--exclude=/usr/lib/mono" "--exclude=/usr/lib/gcc" "--exclude=/usr/lib/llvm-*" "--exclude=/usr/lib/firefox" "--exclude=/usr/lib/python3" / | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
+        sudo tar -C / -c "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc/*" "--exclude=/dev/*" "--exclude=/run/*" "--exclude=/sys/*" "--exclude=/tmp/*" "--exclude=/opt/*" "--exclude=/var/*" "--exclude=/usr/local/*/*"  "--exclude=/mnt/*" "--exclude=/snap/*" "--exclude=/boot" "--exclude=/data" "--exclude=/boot" "--exclude=/imagegeneration/installers/*.tar.*" "--exclude=/home/runner/runners" "--exclude=/home/runner/work" "--exclude=/usr/share/dotnet" "--exclude=/usr/share/swift" "--exclude=/usr/share/miniconda" "--exclude=/usr/lib/google-cloud-sdk" "--exclude=/usr/lib/jvm" "--exclude=/usr/lib/mono" "--exclude=/usr/lib/gcc" "--exclude=/usr/lib/llvm-*" "--exclude=/usr/lib/firefox" "--exclude=/usr/lib/python3" / | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
       env:
         UPLOAD_LAYER: 1
         TAG: runner-base${{ env.SUFFIX }}
@@ -458,5 +458,27 @@ jobs:
             ${{ steps.firefox.outputs.layer }},
             ${{ steps.python3.outputs.layer }},
             ${{ steps.android.outputs.layer }}
+          ]
+      shell: bash
+    - name: Upload runner-medium
+      run: |
+        node script.js
+      env:
+        TAG: runner-medium${{ env.SUFFIX }}
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }},
+            ${{ steps.usr-local.outputs.diff_id }},
+            ${{ steps.gcc.outputs.diff_id }},
+            ${{ steps.llvm.outputs.diff_id }},
+            ${{ steps.python3.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }},
+            ${{ steps.usr-local.outputs.layer }},
+            ${{ steps.gcc.outputs.layer }},
+            ${{ steps.llvm.outputs.layer }},
+            ${{ steps.python3.outputs.layer }}
           ]
       shell: bash
