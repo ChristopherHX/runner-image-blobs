@@ -167,7 +167,7 @@ jobs:
     - name: Dump Base Image
       id: baseImage
       run: |
-        sudo tar -C / -c "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc" "--exclude=/dev" "--exclude=/run" "--exclude=/sys" "--exclude=/tmp" "--exclude=/opt" "--exclude=/var" "--exclude=/usr/local"  "--exclude=/mnt" "--exclude=/snap" "--exclude=/boot" "--exclude=/data" "--exclude=/boot" "/imagegeneration/installers/*.tar.*" "--exclude=/home/runner/runners" "--exclude=/home/runner/work" / | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
+        sudo tar -C / -c "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc" "--exclude=/dev" "--exclude=/run" "--exclude=/sys" "--exclude=/tmp" "--exclude=/opt" "--exclude=/var" "--exclude=/usr/local"  "--exclude=/mnt" "--exclude=/snap" "--exclude=/boot" "--exclude=/data" "--exclude=/boot" "--exclude=/imagegeneration/installers/*.tar.*" "--exclude=/home/runner/runners" "--exclude=/home/runner/work" / | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
       env:
         UPLOAD_LAYER: 1
         TAG: runner-base
