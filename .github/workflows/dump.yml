@@ -3,6 +3,8 @@ jobs:
   dump:
     runs-on: ubuntu-latest
     permissions: write-all
+    env:
+      SUFFIX: -${{ github.run_id }}
     steps:
     - name: Setup node
       uses: actions/setup-node@v3
@@ -88,7 +90,7 @@ jobs:
                 if(process.env.UPLOAD_LAYER) {
                   var diff_id = "sha256:" + (await fs.promises.readFile("sha.txt", { encoding: "utf-8" })).trim()
                   config.rootfs.diff_ids.push(diff_id);
-                  await fs.promises.writeFile(process.GITHUB_OUTPUT, "diff_id=" + diff_id + "\n", { encoding: "utf-8" })
+                  await fs.promises.writeFile(process.env.GITHUB_OUTPUT, "diff_id=" + diff_id + "\n", { encoding: "utf-8" })
                 }
 
                 var strconfig = JSON.stringify(config);
@@ -142,7 +144,7 @@ jobs:
                     "digest": "sha256:" + (await fs.promises.readFile("sha2.txt", { encoding: "utf-8" })).trim()
                   };
                   manidest.layers.push(layer);
-                  await fs.promises.writeFile(process.GITHUB_OUTPUT, "layer=" + layer + "\n", { encoding: "utf-8" })
+                  await fs.promises.writeFile(process.env.GITHUB_OUTPUT, "layer=" + layer + "\n", { encoding: "utf-8" })
                 }
                 var strmanifest = JSON.stringify(manifest);
                 console.log(strmanifest);
@@ -167,10 +169,10 @@ jobs:
     - name: Dump Base Image
       id: baseImage
       run: |
-        sudo tar -C / -c "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc" "--exclude=/dev" "--exclude=/run" "--exclude=/sys" "--exclude=/tmp" "--exclude=/opt" "--exclude=/var" "--exclude=/usr/local"  "--exclude=/mnt" "--exclude=/snap" "--exclude=/boot" "--exclude=/data" "--exclude=/boot" "--exclude=/imagegeneration/installers/*.tar.*" "--exclude=/home/runner/runners" "--exclude=/home/runner/work" / | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
+        sudo tar -C / -c "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc" "--exclude=/dev" "--exclude=/run" "--exclude=/sys" "--exclude=/tmp" "--exclude=/opt" "--exclude=/var" "--exclude=/usr/local"  "--exclude=/mnt" "--exclude=/snap" "--exclude=/boot" "--exclude=/data" "--exclude=/boot" "--exclude=/imagegeneration/installers/*.tar.*" "--exclude=/home/runner/runners" "--exclude=/home/runner/work" "--exclude=/usr/share/dotnet" "--exclude=/usr/share/swift" "--exclude=/usr/share/miniconda" "--exclude=/usr/lib/google-cloud-sdk" "--exclude=/usr/lib/jvm" "--exclude=/usr/lib/mono" "--exclude=/usr/lib/gcc" "--exclude=/usr/lib/llvm-*" "--exclude=/usr/lib/firefox" "--exclude=/usr/lib/python3" / | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
       env:
         UPLOAD_LAYER: 1
-        TAG: runner-base
+        TAG: runner-base${{ env.SUFFIX }}
       shell: bash
     - name: Dump /usr/local
       id: usr-local
@@ -178,7 +180,7 @@ jobs:
         sudo tar -C / -c /usr/local | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
       env:
         UPLOAD_LAYER: 1
-        TAG: runner-usr-local
+        TAG: runner-usr-local${{ env.SUFFIX }}
         DIFF_IDS: |
           [
             ${{ steps.baseImage.outputs.diff_id }}
@@ -194,7 +196,7 @@ jobs:
         sudo tar -C / -c /snap | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
       env:
         UPLOAD_LAYER: 1
-        TAG: runner-snap
+        TAG: runner-snap${{ env.SUFFIX }}
         DIFF_IDS: |
           [
             ${{ steps.baseImage.outputs.diff_id }}
@@ -210,7 +212,169 @@ jobs:
         sudo tar -C / -c /opt | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
       env:
         UPLOAD_LAYER: 1
-        TAG: runner-opt
+        TAG: runner-opt${{ env.SUFFIX }}
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }}
+          ]
+      shell: bash
+    - name: Dump /usr/share/dotnet
+      id: dotnet
+      run: |
+        sudo tar -C / -c /usr/share/dotnet | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
+      env:
+        UPLOAD_LAYER: 1
+        TAG: runner-dotnet${{ env.SUFFIX }}
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }}
+          ]
+      shell: bash
+    - name: Dump /usr/share/swift
+      id: swift
+      run: |
+        sudo tar -C / -c /usr/share/swift | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
+      env:
+        UPLOAD_LAYER: 1
+        TAG: runner-swift${{ env.SUFFIX }}
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }}
+          ]
+      shell: bash
+    - name: Dump /usr/share/miniconda
+      id: miniconda
+      run: |
+        sudo tar -C / -c /usr/share/miniconda | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
+      env:
+        UPLOAD_LAYER: 1
+        TAG: runner-miniconda${{ env.SUFFIX }}
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }}
+          ]
+      shell: bash
+    - name: Dump /usr/lib/google-cloud-sdk
+      id: google-cloud-sdk
+      run: |
+        sudo tar -C / -c /usr/lib/google-cloud-sdk | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
+      env:
+        UPLOAD_LAYER: 1
+        TAG: runner-google-cloud-sdk${{ env.SUFFIX }}
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }}
+          ]
+      shell: bash
+    - name: Dump /usr/lib/jvm
+      id: jvm
+      run: |
+        sudo tar -C / -c /usr/lib/jvm | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
+      env:
+        UPLOAD_LAYER: 1
+        TAG: runner-jvm${{ env.SUFFIX }}
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }}
+          ]
+      shell: bash
+    - name: Dump /usr/lib/mono
+      id: mono
+      run: |
+        sudo tar -C / -c /usr/lib/mono | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
+      env:
+        UPLOAD_LAYER: 1
+        TAG: runner-mono${{ env.SUFFIX }}
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }}
+          ]
+      shell: bash
+    - name: Dump gcc
+      id: gcc
+      run: |
+        sudo tar -C / -c /usr/lib/gcc | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
+      env:
+        UPLOAD_LAYER: 1
+        TAG: runner-gcc${{ env.SUFFIX }}
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }}
+          ]
+      shell: bash
+    - name: Dump llvm
+      id: llvm
+      run: |
+        sudo tar -C / -c /usr/lib/llvm-* | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
+      env:
+        UPLOAD_LAYER: 1
+        TAG: runner-llvm${{ env.SUFFIX }}
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }},
+            ${{ steps.gcc.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }},
+            ${{ steps.gcc.outputs.layer }}
+          ]
+      shell: bash
+    - name: Dump firefox
+      id: firefox
+      run: |
+        sudo tar -C / -c /usr/lib/firefox | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
+      env:
+        UPLOAD_LAYER: 1
+        TAG: runner-firefox${{ env.SUFFIX }}
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }}
+          ]
+      shell: bash
+    - name: Dump python3
+      id: python3
+      run: |
+        sudo tar -C / -c /usr/lib/python3 | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
+      env:
+        UPLOAD_LAYER: 1
+        TAG: runner-python3${{ env.SUFFIX }}
         DIFF_IDS: |
           [
             ${{ steps.baseImage.outputs.diff_id }}
@@ -224,7 +388,7 @@ jobs:
       run: |
         node script.js
       env:
-        TAG: runner-use-local-opt
+        TAG: runner-use-local-opt${{ env.SUFFIX }}
         DIFF_IDS: |
           [
             ${{ steps.baseImage.outputs.diff_id }},
@@ -242,19 +406,39 @@ jobs:
       run: |
         node script.js
       env:
-        TAG: runner-use-local-opt-snap
+        TAG: runner-use-local-opt-snap${{ env.SUFFIX }}
         DIFF_IDS: |
           [
             ${{ steps.baseImage.outputs.diff_id }},
             ${{ steps.usr-local.outputs.diff_id }},
             ${{ steps.opt.outputs.diff_id }},
-            ${{ steps.snap.outputs.diff_id }}
+            ${{ steps.snap.outputs.diff_id }},
+            ${{ steps.dotnet.outputs.diff_id }},
+            ${{ steps.swift.outputs.diff_id }},
+            ${{ steps.miniconda.outputs.diff_id }},
+            ${{ steps.google-cloud-sdk.outputs.diff_id }},
+            ${{ steps.jvm.outputs.diff_id }},
+            ${{ steps.mono.outputs.diff_id }},
+            ${{ steps.gcc.outputs.diff_id }},
+            ${{ steps.llvm.outputs.diff_id }},
+            ${{ steps.firefox.outputs.diff_id }},
+            ${{ steps.python3.outputs.diff_id }}
           ]
         LAYERS: |
           [
             ${{ steps.baseImage.outputs.layer }},
             ${{ steps.usr-local.outputs.layer }},
             ${{ steps.opt.outputs.layer }},
-            ${{ steps.snap.outputs.layer }}
+            ${{ steps.snap.outputs.layer }},
+            ${{ steps.dotnet.outputs.layer }},
+            ${{ steps.swift.outputs.layer }},
+            ${{ steps.miniconda.outputs.layer }},
+            ${{ steps.google-cloud-sdk.outputs.layer }},
+            ${{ steps.jvm.outputs.layer }},
+            ${{ steps.mono.outputs.layer }},
+            ${{ steps.gcc.outputs.layer }},
+            ${{ steps.llvm.outputs.layer }},
+            ${{ steps.firefox.outputs.layer }},
+            ${{ steps.python3.outputs.layer }}
           ]
       shell: bash
