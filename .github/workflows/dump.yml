@@ -1,10 +1,15 @@
 on: push
 jobs:
   dump:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        runner:
+        - ubuntu-20.04
+        - ubuntu-22.04
+    runs-on: ${{ matrix.runner }}
     permissions: write-all
     env:
-      SUFFIX: -${{ github.run_id }}
+      SUFFIX: -${{ github.run_id }}.${{ github.run_attempt }}
     steps:
     - name: Setup node
       uses: actions/setup-node@v3
@@ -179,7 +184,7 @@ jobs:
 
                 if(envMap["ImageOS"] && envMap["ImageVersion"]) {
                   await refresh();
-                  resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/manifests/" + envMap["ImageOS"] + "-" + envMap["ImageVersion"] + "-" + process.env.TAG, { method: "PUT", redirect: "manual", body: strmanifest, duplex: "half", credentials: "include", headers: {
+                  resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/manifests/" + envMap["ImageOS"] + "-" + process.env.TAG + "-" + envMap["ImageVersion"], { method: "PUT", redirect: "manual", body: strmanifest, duplex: "half", credentials: "include", headers: {
                       "Content-Type": "application/vnd.docker.distribution.manifest.v2+json",
                       "Authorization": "Bearer " + token
                   } });
@@ -223,10 +228,26 @@ jobs:
     - name: Dump /opt
       id: opt
       run: |
-        sudo tar -C / -c /opt | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
+        sudo tar -C / -c "--exclude=/opt/hostedtoolcache" /opt | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
       env:
         UPLOAD_LAYER: 1
         TAG: runner-opt
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }}
+          ]
+      shell: bash
+    - name: Dump /opt/hostedtoolcache
+      id: hostedtoolcache
+      run: |
+        sudo tar -C / -c /opt/hostedtoolcache | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
+      env:
+        UPLOAD_LAYER: 1
+        TAG: runner-hostedtoolcache
         DIFF_IDS: |
           [
             ${{ steps.baseImage.outputs.diff_id }}
