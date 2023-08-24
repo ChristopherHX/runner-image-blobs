@@ -56,7 +56,8 @@ jobs:
                 clearInterval(token);
 
                 var environment = await fs.promises.readFile("/etc/environment", { encoding: "utf-8" });
-                var envmap = [];
+                var envMap = {};
+                var envList = [];
                 var trimQuotes = str => {
                   if(str.startsWith("\"") && str.endsWith("\"")) {
                     return str.substring(1, str.length - 1);
@@ -66,7 +67,10 @@ jobs:
                 for(var line of environment.split("\n")) {
                   if(line.length > 0) {
                     var i = line.indexOf("=");
-                    envmap.push(line.substring(0, i) + "=" + trimQuotes(line.substring(i + 1)));
+                    var key = line.substring(0, i);
+                    var val = trimQuotes(line.substring(i + 1));
+                    envList.push(key + "=" + val);
+                    envMap[key] = val;
                   }
                 }
                 
@@ -74,8 +78,21 @@ jobs:
                   "architecture": "amd64",
                   "os": "linux",
                   "config": {
-                    "Env": envmap,
-                    "Entrypoint": ["bash"]
+                    "Env": envList,
+                    "Entrypoint": ["bash"],
+                    "Labels": {
+                      "org.opencontainers.image.authors": ${{ toJson(format('{0}/{1}', github.server_url, github.repository_owner)) }},
+                      "org.opencontainers.image.created": new Date().toISOString(),
+                      "org.opencontainers.image.description": "Dump of the runner image",
+                      "org.opencontainers.image.documentation": ${{ toJson(format('{0}/{1}/tree/{2}', github.server_url, github.repository, github.sha)) }},
+                      "org.opencontainers.image.ref.name": "runner-image",
+                      "org.opencontainers.image.revision": ${{ toJson(github.sha) }},
+                      "org.opencontainers.image.source": ${{ toJson(format('{0}/{1}/tree/{2}', github.server_url, github.repository, github.sha)) }},
+                      "org.opencontainers.image.title": "runner-22.04-amd64",
+                      "org.opencontainers.image.url": ${{ toJson(format('{0}/{1}/tree/{2}', github.server_url, github.repository, github.sha)) }},
+                      "org.opencontainers.image.vendor": ${{ toJson(github.repository_owner) }},
+                      "org.opencontainers.image.version": envMap["ImageOS"] + "-" + envMap["ImageVersion"]
+                    },
                   },
                   "rootfs": {
                     "type": "layers",
@@ -150,11 +167,24 @@ jobs:
                 console.log(strmanifest);
                 
                 await refresh();
-                resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/manifests/" + process.env.TAG, { method: "PUT", redirect: "manual", body: strmanifest, duplex: "half", credentials: "include", headers: {
+                var tag = process.env.TAG + (process.env.SUFFIX || '');
+                if(envMap["ImageOS"]) {
+                  tag = envMap["ImageOS"] + "-" + tag;
+                }
+                resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/manifests/" + tag, { method: "PUT", redirect: "manual", body: strmanifest, duplex: "half", credentials: "include", headers: {
                     "Content-Type": "application/vnd.docker.distribution.manifest.v2+json",
                     "Authorization": "Bearer " + token
                 } });
                 console.log(JSON.stringify(resp.status));
+
+                if(envMap["ImageOS"] && envMap["ImageVersion"]) {
+                  await refresh();
+                  resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/manifests/" + envMap["ImageOS"] + "-" + envMap["ImageVersion"] + "-" + process.env.TAG, { method: "PUT", redirect: "manual", body: strmanifest, duplex: "half", credentials: "include", headers: {
+                      "Content-Type": "application/vnd.docker.distribution.manifest.v2+json",
+                      "Authorization": "Bearer " + token
+                  } });
+                  console.log(JSON.stringify(resp.status));
+                }
                 
                 process.exitCode = 0;
             } catch(ex) {
@@ -169,18 +199,18 @@ jobs:
     - name: Dump Base Image
       id: baseImage
       run: |
-        sudo tar -C / -c "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc/*" "--exclude=/dev/*" "--exclude=/run/*" "--exclude=/sys/*" "--exclude=/tmp/*" "--exclude=/opt/*" "--exclude=/var/*" "--exclude=/usr/local/*/*"  "--exclude=/mnt/*" "--exclude=/snap/*" "--exclude=/boot" "--exclude=/data" "--exclude=/boot" "--exclude=/imagegeneration/installers/*.tar.*" "--exclude=/home/runner/runners" "--exclude=/home/runner/work" "--exclude=/usr/share/dotnet" "--exclude=/usr/share/swift" "--exclude=/usr/share/miniconda" "--exclude=/usr/lib/google-cloud-sdk" "--exclude=/usr/lib/jvm" "--exclude=/usr/lib/mono" "--exclude=/usr/lib/gcc" "--exclude=/usr/lib/llvm-*" "--exclude=/usr/lib/firefox" "--exclude=/usr/lib/python3" / | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
+        sudo tar -C / -c "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc/*" "--exclude=/dev/*" "--exclude=/run/*" "--exclude=/sys/*" "--exclude=/tmp/*" "--exclude=/opt/*" "--exclude=/var/*" "--exclude=/usr/local/*/*"  "--exclude=/mnt/*" "--exclude=/snap/*" "--exclude=/boot" "--exclude=/data" "--exclude=/boot" "--exclude=/imagegeneration/installers/*.tar.*" "--exclude=/home/runner/runners" "--exclude=/home/runner/work" "--exclude=/usr/share/dotnet" "--exclude=/etc/skel" "--exclude=/home/runner/.dotnet" "--exclude=/home/runneradmin" "--exclude=/usr/share/swift" "--exclude=/usr/share/miniconda" "--exclude=/usr/lib/google-cloud-sdk" "--exclude=/usr/lib/jvm" "--exclude=/usr/lib/mono" "--exclude=/usr/lib/gcc" "--exclude=/usr/lib/llvm-*" "--exclude=/usr/lib/firefox" "--exclude=/usr/lib/python3" / | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
       env:
         UPLOAD_LAYER: 1
-        TAG: runner-base${{ env.SUFFIX }}
+        TAG: runner-base
       shell: bash
     - name: Dump /usr/local
       id: usr-local
       run: |
-        sudo tar -C / -c "--exclude=/usr/local/lib/android" /usr/local | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
+        sudo tar -C / -c "--exclude=/usr/local/lib/android" "--exclude=/usr/local/.ghcup" "--exclude=/usr/local/share/powershell" /usr/local | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
       env:
         UPLOAD_LAYER: 1
-        TAG: runner-usr-local${{ env.SUFFIX }}
+        TAG: runner-usr-local
         DIFF_IDS: |
           [
             ${{ steps.baseImage.outputs.diff_id }}
@@ -196,7 +226,7 @@ jobs:
         sudo tar -C / -c /opt | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
       env:
         UPLOAD_LAYER: 1
-        TAG: runner-opt${{ env.SUFFIX }}
+        TAG: runner-opt
         DIFF_IDS: |
           [
             ${{ steps.baseImage.outputs.diff_id }}
@@ -209,10 +239,10 @@ jobs:
     - name: Dump /usr/share/dotnet
       id: dotnet
       run: |
-        sudo tar -C / -c /usr/share/dotnet | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
+        sudo tar -C / -c /usr/share/dotnet /home/runner/.dotnet | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
       env:
         UPLOAD_LAYER: 1
-        TAG: runner-dotnet${{ env.SUFFIX }}
+        TAG: runner-dotnet
         DIFF_IDS: |
           [
             ${{ steps.baseImage.outputs.diff_id }}
@@ -228,7 +258,7 @@ jobs:
         sudo tar -C / -c /usr/share/swift | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
       env:
         UPLOAD_LAYER: 1
-        TAG: runner-swift${{ env.SUFFIX }}
+        TAG: runner-swift
         DIFF_IDS: |
           [
             ${{ steps.baseImage.outputs.diff_id }}
@@ -244,7 +274,7 @@ jobs:
         sudo tar -C / -c /usr/share/miniconda | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
       env:
         UPLOAD_LAYER: 1
-        TAG: runner-miniconda${{ env.SUFFIX }}
+        TAG: runner-miniconda
         DIFF_IDS: |
           [
             ${{ steps.baseImage.outputs.diff_id }}
@@ -260,7 +290,7 @@ jobs:
         sudo tar -C / -c /usr/lib/google-cloud-sdk | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
       env:
         UPLOAD_LAYER: 1
-        TAG: runner-google-cloud-sdk${{ env.SUFFIX }}
+        TAG: runner-google-cloud-sdk
         DIFF_IDS: |
           [
             ${{ steps.baseImage.outputs.diff_id }}
@@ -276,7 +306,7 @@ jobs:
         sudo tar -C / -c /usr/lib/jvm | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
       env:
         UPLOAD_LAYER: 1
-        TAG: runner-jvm${{ env.SUFFIX }}
+        TAG: runner-jvm
         DIFF_IDS: |
           [
             ${{ steps.baseImage.outputs.diff_id }}
@@ -292,7 +322,7 @@ jobs:
         sudo tar -C / -c /usr/lib/mono | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
       env:
         UPLOAD_LAYER: 1
-        TAG: runner-mono${{ env.SUFFIX }}
+        TAG: runner-mono
         DIFF_IDS: |
           [
             ${{ steps.baseImage.outputs.diff_id }}
@@ -308,7 +338,7 @@ jobs:
         sudo tar -C / -c /usr/lib/gcc | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
       env:
         UPLOAD_LAYER: 1
-        TAG: runner-gcc${{ env.SUFFIX }}
+        TAG: runner-gcc
         DIFF_IDS: |
           [
             ${{ steps.baseImage.outputs.diff_id }}
@@ -324,7 +354,7 @@ jobs:
         sudo tar -C / -c /usr/lib/llvm-* | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
       env:
         UPLOAD_LAYER: 1
-        TAG: runner-llvm${{ env.SUFFIX }}
+        TAG: runner-llvm
         DIFF_IDS: |
           [
             ${{ steps.baseImage.outputs.diff_id }},
@@ -342,7 +372,7 @@ jobs:
         sudo tar -C / -c /usr/lib/firefox | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
       env:
         UPLOAD_LAYER: 1
-        TAG: runner-firefox${{ env.SUFFIX }}
+        TAG: runner-firefox
         DIFF_IDS: |
           [
             ${{ steps.baseImage.outputs.diff_id }}
@@ -358,7 +388,7 @@ jobs:
         sudo tar -C / -c /usr/lib/python3 | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
       env:
         UPLOAD_LAYER: 1
-        TAG: runner-python3${{ env.SUFFIX }}
+        TAG: runner-python3
         DIFF_IDS: |
           [
             ${{ steps.baseImage.outputs.diff_id }}
@@ -374,14 +404,52 @@ jobs:
         sudo tar -C / -c /usr/local/lib/android | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
       env:
         UPLOAD_LAYER: 1
-        TAG: runner-usr-android${{ env.SUFFIX }}
+        TAG: runner-usr-android
         DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }}
+            ${{ steps.baseImage.outputs.diff_id }},
+            ${{ steps.usr-local.outputs.diff_id }}
           ]
         LAYERS: |
           [
-            ${{ steps.baseImage.outputs.layer }}
+            ${{ steps.baseImage.outputs.layer }},
+            ${{ steps.usr-local.outputs.layer }}
+          ]
+      shell: bash
+    - name: Dump haskell
+      id: haskell
+      run: |
+        sudo tar -C / -c /usr/local/.ghcup | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
+      env:
+        UPLOAD_LAYER: 1
+        TAG: runner-usr-haskell
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }},
+            ${{ steps.usr-local.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }},
+            ${{ steps.usr-local.outputs.layer }}
+          ]
+      shell: bash
+    - name: Dump powershell
+      id: powershell
+      run: |
+        sudo tar -C / -c /usr/local/share/powershell | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
+      env:
+        UPLOAD_LAYER: 1
+        TAG: runner-usr-haskell
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }},
+            ${{ steps.usr-local.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }},
+            ${{ steps.usr-local.outputs.layer }}
           ]
       shell: bash
     - name: Dump /snap
@@ -390,7 +458,7 @@ jobs:
         sudo tar -C / -c /snap | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
       env:
         UPLOAD_LAYER: 1
-        TAG: runner-snap${{ env.SUFFIX }}
+        TAG: runner-snap
         DIFF_IDS: |
           [
             ${{ steps.baseImage.outputs.diff_id }}
@@ -400,11 +468,11 @@ jobs:
             ${{ steps.baseImage.outputs.layer }}
           ]
       shell: bash
-    - name: Upload runner-use-local-opt
+    - name: Upload runner-usr-local-opt
       run: |
         node script.js
       env:
-        TAG: runner-use-local-opt${{ env.SUFFIX }}
+        TAG: runner-usr-local-opt
         DIFF_IDS: |
           [
             ${{ steps.baseImage.outputs.diff_id }},
@@ -418,11 +486,11 @@ jobs:
             ${{ steps.opt.outputs.layer }}
           ]
       shell: bash
-    - name: Upload runner-use-local-opt-snap
+    - name: Upload runner-usr-local-opt-snap
       run: |
         node script.js
       env:
-        TAG: runner-use-local-opt-snap${{ env.SUFFIX }}
+        TAG: runner-usr-local-opt-snap
         DIFF_IDS: |
           [
             ${{ steps.baseImage.outputs.diff_id }},
@@ -439,7 +507,9 @@ jobs:
             ${{ steps.llvm.outputs.diff_id }},
             ${{ steps.firefox.outputs.diff_id }},
             ${{ steps.python3.outputs.diff_id }},
-            ${{ steps.android.outputs.diff_id }}
+            ${{ steps.android.outputs.diff_id }},
+            ${{ steps.haskell.outputs.diff_id }},
+            ${{ steps.powershell.outputs.diff_id }}
           ]
         LAYERS: |
           [
@@ -457,14 +527,16 @@ jobs:
             ${{ steps.llvm.outputs.layer }},
             ${{ steps.firefox.outputs.layer }},
             ${{ steps.python3.outputs.layer }},
-            ${{ steps.android.outputs.layer }}
+            ${{ steps.android.outputs.layer }},
+            ${{ steps.haskell.outputs.layer }},
+            ${{ steps.powershell.outputs.layer }}
           ]
       shell: bash
     - name: Upload runner-medium
       run: |
         node script.js
       env:
-        TAG: runner-medium${{ env.SUFFIX }}
+        TAG: runner-medium
         DIFF_IDS: |
           [
             ${{ steps.baseImage.outputs.diff_id }},
