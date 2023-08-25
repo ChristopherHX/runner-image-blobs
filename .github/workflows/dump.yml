@@ -90,7 +90,7 @@ jobs:
                   "config": {
                     "Env": envList,
                     "Entrypoint": ["bash"],
-                    "User: "runner",
+                    "User": "runner",
                     "Labels": {
                       "org.opencontainers.image.authors": ${{ toJson(format('{0}/{1}', github.server_url, github.repository_owner)) }},
                       "org.opencontainers.image.created": new Date().toISOString(),
