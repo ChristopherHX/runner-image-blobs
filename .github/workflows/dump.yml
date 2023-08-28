@@ -1,6 +1,10 @@
-on: push
+on:
+  push:
+  schedule:
+  - cron: "* * */14 * *"
 jobs:
   dump:
+    if: github.event_name != 'schedule' || vars.ENABLE_SCHEDULE == 'true'
     strategy:
       matrix:
         runner:
@@ -494,16 +498,18 @@ jobs:
         sudo tar -C / -c /usr/local/share/powershell ${{ env.UP }}
       env:
         UPLOAD_LAYER: 1
-        TAG: runner-usr-haskell
+        TAG: runner-usr-powershell
         DIFF_IDS: |
           [
             ${{ steps.baseImage.outputs.diff_id }},
-            ${{ steps.usr-local.outputs.diff_id }}
+            ${{ steps.usr-local.outputs.diff_id }},
+            ${{ steps.opt.outputs.diff_id }}
           ]
         LAYERS: |
           [
             ${{ steps.baseImage.outputs.layer }},
-            ${{ steps.usr-local.outputs.layer }}
+            ${{ steps.usr-local.outputs.layer }},
+            ${{ steps.opt.outputs.layer }}
           ]
       shell: bash
     - name: Dump /snap
@@ -599,6 +605,7 @@ jobs:
           [
             ${{ steps.baseImage.outputs.diff_id }},
             ${{ steps.usr-local.outputs.diff_id }},
+            ${{ steps.opt.outputs.diff_id }},
             ${{ steps.gcc.outputs.diff_id }},
             ${{ steps.llvm.outputs.diff_id }},
             ${{ steps.python3.outputs.diff_id }}
@@ -607,8 +614,321 @@ jobs:
           [
             ${{ steps.baseImage.outputs.layer }},
             ${{ steps.usr-local.outputs.layer }},
+            ${{ steps.opt.outputs.layer }},
             ${{ steps.gcc.outputs.layer }},
             ${{ steps.llvm.outputs.layer }},
             ${{ steps.python3.outputs.layer }}
+          ]
+      shell: bash
+    - name: Upload runner-medium-powershell
+      run: |
+        node script.js
+      env:
+        TAG: runner-medium-powershell
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }},
+            ${{ steps.usr-local.outputs.diff_id }},
+            ${{ steps.opt.outputs.diff_id }},
+            ${{ steps.gcc.outputs.diff_id }},
+            ${{ steps.llvm.outputs.diff_id }},
+            ${{ steps.python3.outputs.diff_id }},
+            ${{ steps.powershell.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }},
+            ${{ steps.usr-local.outputs.layer }},
+            ${{ steps.opt.outputs.layer }},
+            ${{ steps.gcc.outputs.layer }},
+            ${{ steps.llvm.outputs.layer }},
+            ${{ steps.python3.outputs.layer }},
+            ${{ steps.powershell.outputs.layer }}
+          ]
+      shell: bash
+    - name: Upload runner-medium-haskell
+      run: |
+        node script.js
+      env:
+        TAG: runner-medium-haskell
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }},
+            ${{ steps.usr-local.outputs.diff_id }},
+            ${{ steps.opt.outputs.diff_id }},
+            ${{ steps.gcc.outputs.diff_id }},
+            ${{ steps.llvm.outputs.diff_id }},
+            ${{ steps.python3.outputs.diff_id }},
+            ${{ steps.dotnet.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }},
+            ${{ steps.usr-local.outputs.layer }},
+            ${{ steps.opt.outputs.layer }},
+            ${{ steps.gcc.outputs.layer }},
+            ${{ steps.llvm.outputs.layer }},
+            ${{ steps.python3.outputs.layer }},
+            ${{ steps.haskell.outputs.layer }}
+          ]
+      shell: bash
+    - name: Upload runner-medium-dotnet
+      run: |
+        node script.js
+      env:
+        TAG: runner-medium-dotnet
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }},
+            ${{ steps.usr-local.outputs.diff_id }},
+            ${{ steps.opt.outputs.diff_id }},
+            ${{ steps.gcc.outputs.diff_id }},
+            ${{ steps.llvm.outputs.diff_id }},
+            ${{ steps.python3.outputs.diff_id }},
+            ${{ steps.dotnet.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }},
+            ${{ steps.usr-local.outputs.layer }},
+            ${{ steps.opt.outputs.layer }},
+            ${{ steps.gcc.outputs.layer }},
+            ${{ steps.llvm.outputs.layer }},
+            ${{ steps.python3.outputs.layer }},
+            ${{ steps.dotnet.outputs.layer }}
+          ]
+      shell: bash
+    - name: Upload runner-medium-rust
+      run: |
+        node script.js
+      env:
+        TAG: runner-medium-rust
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }},
+            ${{ steps.usr-local.outputs.diff_id }},
+            ${{ steps.opt.outputs.diff_id }},
+            ${{ steps.gcc.outputs.diff_id }},
+            ${{ steps.llvm.outputs.diff_id }},
+            ${{ steps.python3.outputs.diff_id }},
+            ${{ steps.rust.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }},
+            ${{ steps.usr-local.outputs.layer }},
+            ${{ steps.opt.outputs.layer }},
+            ${{ steps.gcc.outputs.layer }},
+            ${{ steps.llvm.outputs.layer }},
+            ${{ steps.python3.outputs.layer }},
+            ${{ steps.rust.outputs.layer }}
+          ]
+      shell: bash
+    - name: Upload runner-medium-swift
+      run: |
+        node script.js
+      env:
+        TAG: runner-medium-swift
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }},
+            ${{ steps.usr-local.outputs.diff_id }},
+            ${{ steps.opt.outputs.diff_id }},
+            ${{ steps.gcc.outputs.diff_id }},
+            ${{ steps.llvm.outputs.diff_id }},
+            ${{ steps.python3.outputs.diff_id }},
+            ${{ steps.swift.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }},
+            ${{ steps.usr-local.outputs.layer }},
+            ${{ steps.opt.outputs.layer }},
+            ${{ steps.gcc.outputs.layer }},
+            ${{ steps.llvm.outputs.layer }},
+            ${{ steps.python3.outputs.layer }},
+            ${{ steps.swift.outputs.layer }}
+          ]
+      shell: bash
+    - name: Upload runner-medium-firefox
+      run: |
+        node script.js
+      env:
+        TAG: runner-medium-firefox
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }},
+            ${{ steps.usr-local.outputs.diff_id }},
+            ${{ steps.opt.outputs.diff_id }},
+            ${{ steps.gcc.outputs.diff_id }},
+            ${{ steps.llvm.outputs.diff_id }},
+            ${{ steps.python3.outputs.diff_id }},
+            ${{ steps.firefox.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }},
+            ${{ steps.usr-local.outputs.layer }},
+            ${{ steps.opt.outputs.layer }},
+            ${{ steps.gcc.outputs.layer }},
+            ${{ steps.llvm.outputs.layer }},
+            ${{ steps.python3.outputs.layer }},
+            ${{ steps.firefox.outputs.layer }}
+          ]
+      shell: bash
+    - name: Upload runner-medium-google-cloud-sdk
+      run: |
+        node script.js
+      env:
+        TAG: runner-medium-google-cloud-sdk
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }},
+            ${{ steps.usr-local.outputs.diff_id }},
+            ${{ steps.opt.outputs.diff_id }},
+            ${{ steps.gcc.outputs.diff_id }},
+            ${{ steps.llvm.outputs.diff_id }},
+            ${{ steps.python3.outputs.diff_id }},
+            ${{ steps.google-cloud-sdk.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }},
+            ${{ steps.usr-local.outputs.layer }},
+            ${{ steps.opt.outputs.layer }},
+            ${{ steps.gcc.outputs.layer }},
+            ${{ steps.llvm.outputs.layer }},
+            ${{ steps.python3.outputs.layer }},
+            ${{ steps.google-cloud-sdk.outputs.layer }}
+          ]
+      shell: bash
+    - name: Upload runner-medium-miniconda
+      run: |
+        node script.js
+      env:
+        TAG: runner-medium-miniconda
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }},
+            ${{ steps.usr-local.outputs.diff_id }},
+            ${{ steps.opt.outputs.diff_id }},
+            ${{ steps.gcc.outputs.diff_id }},
+            ${{ steps.llvm.outputs.diff_id }},
+            ${{ steps.python3.outputs.diff_id }},
+            ${{ steps.miniconda.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }},
+            ${{ steps.usr-local.outputs.layer }},
+            ${{ steps.opt.outputs.layer }},
+            ${{ steps.gcc.outputs.layer }},
+            ${{ steps.llvm.outputs.layer }},
+            ${{ steps.python3.outputs.layer }},
+            ${{ steps.miniconda.outputs.layer }}
+          ]
+      shell: bash
+    - name: Upload runner-medium-hostedtoolcache
+      run: |
+        node script.js
+      env:
+        TAG: runner-medium-hostedtoolcache
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }},
+            ${{ steps.usr-local.outputs.diff_id }},
+            ${{ steps.opt.outputs.diff_id }},
+            ${{ steps.gcc.outputs.diff_id }},
+            ${{ steps.llvm.outputs.diff_id }},
+            ${{ steps.python3.outputs.diff_id }},
+            ${{ steps.hostedtoolcache.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }},
+            ${{ steps.usr-local.outputs.layer }},
+            ${{ steps.opt.outputs.layer }},
+            ${{ steps.gcc.outputs.layer }},
+            ${{ steps.llvm.outputs.layer }},
+            ${{ steps.python3.outputs.layer }},
+            ${{ steps.hostedtoolcache.outputs.layer }}
+          ]
+      shell: bash
+    - name: Upload runner-medium-mono
+      run: |
+        node script.js
+      env:
+        TAG: runner-medium-mono
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }},
+            ${{ steps.usr-local.outputs.diff_id }},
+            ${{ steps.opt.outputs.diff_id }},
+            ${{ steps.gcc.outputs.diff_id }},
+            ${{ steps.llvm.outputs.diff_id }},
+            ${{ steps.python3.outputs.diff_id }},
+            ${{ steps.mono.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }},
+            ${{ steps.usr-local.outputs.layer }},
+            ${{ steps.opt.outputs.layer }},
+            ${{ steps.gcc.outputs.layer }},
+            ${{ steps.llvm.outputs.layer }},
+            ${{ steps.python3.outputs.layer }},
+            ${{ steps.mono.outputs.layer }}
+          ]
+      shell: bash
+    - name: Upload runner-medium-android
+      run: |
+        node script.js
+      env:
+        TAG: runner-medium-android
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }},
+            ${{ steps.usr-local.outputs.diff_id }},
+            ${{ steps.opt.outputs.diff_id }},
+            ${{ steps.gcc.outputs.diff_id }},
+            ${{ steps.llvm.outputs.diff_id }},
+            ${{ steps.python3.outputs.diff_id }},
+            ${{ steps.android.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }},
+            ${{ steps.usr-local.outputs.layer }},
+            ${{ steps.opt.outputs.layer }},
+            ${{ steps.gcc.outputs.layer }},
+            ${{ steps.llvm.outputs.layer }},
+            ${{ steps.python3.outputs.layer }},
+            ${{ steps.android.outputs.layer }}
+          ]
+      shell: bash
+    - name: Upload runner-medium-jvm
+      run: |
+        node script.js
+      env:
+        TAG: runner-medium-jvm
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }},
+            ${{ steps.usr-local.outputs.diff_id }},
+            ${{ steps.opt.outputs.diff_id }},
+            ${{ steps.gcc.outputs.diff_id }},
+            ${{ steps.llvm.outputs.diff_id }},
+            ${{ steps.python3.outputs.diff_id }},
+            ${{ steps.jvm.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }},
+            ${{ steps.usr-local.outputs.layer }},
+            ${{ steps.opt.outputs.layer }},
+            ${{ steps.gcc.outputs.layer }},
+            ${{ steps.llvm.outputs.layer }},
+            ${{ steps.python3.outputs.layer }},
+            ${{ steps.jvm.outputs.layer }}
           ]
       shell: bash
