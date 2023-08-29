@@ -1,7 +1,5 @@
 on:
   push:
-  schedule:
-  - cron: "* * */14 * *"
 jobs:
   dump:
     if: github.event_name != 'schedule' || vars.ENABLE_SCHEDULE == 'true'
