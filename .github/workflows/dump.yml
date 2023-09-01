@@ -1,5 +1,7 @@
 on:
   push:
+  schedule:
+  - cron: 0 22 */7 * *
 jobs:
   dump:
     if: github.event_name != 'schedule' || vars.ENABLE_SCHEDULE == 'true'
@@ -192,11 +194,19 @@ jobs:
 
                 if(friendlyTag) {
                   await refresh();
-                  resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/manifests/" + friendlyTag, { method: "PUT", redirect: "manual", body: strmanifest, duplex: "half", credentials: "include", headers: {
-                      "Content-Type": "application/vnd.docker.distribution.manifest.v2+json",
+                  resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/manifests/" + friendlyTag, { method: "GET", redirect: "manual", credentials: "include", headers: {
+                      "Accept": "application/vnd.docker.distribution.manifest.v2+json",
                       "Authorization": "Bearer " + token
                   } });
-                  console.log(JSON.stringify(resp.status));
+
+                  if(resp.status < 200 || resp.status > 299) {
+                  
+                      resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/manifests/" + friendlyTag, { method: "PUT", redirect: "manual", body: strmanifest, duplex: "half", credentials: "include", headers: {
+                          "Content-Type": "application/vnd.docker.distribution.manifest.v2+json",
+                          "Authorization": "Bearer " + token
+                      } });
+                      console.log(JSON.stringify(resp.status));
+                  }
                 }
                 
                 process.exitCode = 0;
