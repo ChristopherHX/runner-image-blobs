@@ -87,7 +87,8 @@ jobs:
                 }
 
                 var friendlyTag = envMap["ImageOS"] && envMap["ImageVersion"] ? envMap["ImageOS"] + "-" + process.env.TAG + "-" + envMap["ImageVersion"] : null;
-                
+                var latestTag = envMap["ImageOS"] && envMap["ImageVersion"] ? envMap["ImageOS"] + "-" + process.env.TAG + "-latest" : null;
+
                 var config = {
                   "architecture": "amd64",
                   "os": "linux",
@@ -202,6 +203,13 @@ jobs:
                   if(resp.status < 200 || resp.status > 299) {
                   
                       resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/manifests/" + friendlyTag, { method: "PUT", redirect: "manual", body: strmanifest, duplex: "half", credentials: "include", headers: {
+                          "Content-Type": "application/vnd.docker.distribution.manifest.v2+json",
+                          "Authorization": "Bearer " + token
+                      } });
+                      console.log(JSON.stringify(resp.status));
+
+                      console.log("Move latest tag forward");
+                      resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/manifests/" + latestTag, { method: "PUT", redirect: "manual", body: strmanifest, duplex: "half", credentials: "include", headers: {
                           "Content-Type": "application/vnd.docker.distribution.manifest.v2+json",
                           "Authorization": "Bearer " + token
                       } });
