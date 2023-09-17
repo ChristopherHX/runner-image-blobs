@@ -94,8 +94,9 @@ jobs:
                   "os": "linux",
                   "config": {
                     "Env": envList,
-                    "Entrypoint": ["bash"],
-                    "User": "runner",
+                    "Entrypoint": null,
+                    "Cmd": [ "bash" ],
+                    "User": process.getuid() + ":" + process.getgid(),
                     "Labels": {
                       "org.opencontainers.image.authors": ${{ toJson(format('{0}/{1}', github.server_url, github.repository_owner)) }},
                       "org.opencontainers.image.created": new Date().toISOString(),
@@ -232,7 +233,7 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc/*" "--exclude=/dev/*" "--exclude=/run/*" "--exclude=/sys/*" "--exclude=/tmp/*" "--exclude=/opt/*" "--exclude=/var/*" "--exclude=/usr/local/*/*"  "--exclude=/mnt/*" "--exclude=/snap/*" "--exclude=/boot" "--exclude=/data" "--exclude=/boot" "--exclude=/imagegeneration/installers/*.tar.*" "--exclude=/home/runner/runners" "--exclude=/home/runner/work" "--exclude=/usr/share/dotnet" "--exclude=/etc/skel" "--exclude=/home/runner/.rustup" "--exclude=/home/runner/.cargo" "--exclude=/home/runner/.dotnet" "--exclude=/home/runneradmin" "--exclude=/usr/share/swift" "--exclude=/usr/share/miniconda" "--exclude=/usr/lib/google-cloud-sdk" "--exclude=/usr/lib/jvm" "--exclude=/usr/lib/mono" "--exclude=/usr/lib/gcc" "--exclude=/usr/lib/llvm-*" "--exclude=/usr/lib/firefox" "--exclude=/usr/lib/python3" / ${{ env.UP }}
+        CMD: sudo tar -C / -c "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc/*" "--exclude=/dev/*" "--exclude=/run/*" "--exclude=/sys/*" "--exclude=/tmp/*" "--exclude=/opt/*" "--exclude=/var/cache/*" "--exclude=/var/run/*" "--exclude=/var/tmp/*" "--exclude=/var/crash/*" "--exclude=/var/lib/docker/*" "--exclude=/var/lib/apt/lists/*" "--exclude=/usr/local/*/*"  "--exclude=/mnt/*" "--exclude=/snap/*" "--exclude=/boot" "--exclude=/data" "--exclude=/boot" "--exclude=/imagegeneration/installers/*.tar.*" "--exclude=/home/runner/runners" "--exclude=/home/runner/work" "--exclude=/usr/share/dotnet" "--exclude=/etc/skel" "--exclude=/home/runner/.rustup" "--exclude=/home/runner/.cargo" "--exclude=/home/runner/.dotnet" "--exclude=/home/runneradmin" "--exclude=/usr/share/swift" "--exclude=/usr/share/miniconda" "--exclude=/usr/lib/google-cloud-sdk" "--exclude=/usr/lib/jvm" "--exclude=/usr/lib/mono" "--exclude=/usr/lib/gcc" "--exclude=/usr/lib/llvm-*" "--exclude=/usr/lib/firefox" "--exclude=/usr/lib/python3" / ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-base
       shell: bash
@@ -241,7 +242,7 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c "--exclude=/usr/local/lib/android" "--exclude=/usr/local/.ghcup" "--exclude=/usr/local/share/powershell" /usr/local ${{ env.UP }}
+        CMD: sudo tar -C / -c "--exclude=/usr/local/lib/android" "--exclude=/usr/local/.ghcup" "--exclude=/usr/local/share/powershell" --no-recursion /usr --recursion /usr/local ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-usr-local
         DIFF_IDS: |
@@ -275,7 +276,7 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c /opt/hostedtoolcache ${{ env.UP }}
+        CMD: sudo tar -C / -c --no-recursion /opt --recursion /opt/hostedtoolcache ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-hostedtoolcache
         DIFF_IDS: |
@@ -292,7 +293,7 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c /home/runner/.rustup /home/runner/.cargo ${{ env.UP }}
+        CMD: sudo tar -C / -c --no-recursion /home /home/runner --recursion /home/runner/.rustup /home/runner/.cargo ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-rust
         DIFF_IDS: |
@@ -309,7 +310,7 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c /usr/share/dotnet /home/runner/.dotnet ${{ env.UP }}
+        CMD: sudo tar -C / -c --no-recursion /home /home/runner /usr /usr/share --recursion /usr/share/dotnet /home/runner/.dotnet ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-dotnet
         DIFF_IDS: |
@@ -326,7 +327,7 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c /usr/share/swift ${{ env.UP }}
+        CMD: sudo tar -C / -c --no-recursion /usr /usr/share --recursion /usr/share/swift ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-swift
         DIFF_IDS: |
@@ -343,7 +344,7 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c /usr/share/miniconda ${{ env.UP }}
+        CMD: sudo tar -C / -c --no-recursion /usr /usr/share --recursion /usr/share/miniconda ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-miniconda
         DIFF_IDS: |
@@ -360,7 +361,7 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c /usr/lib/google-cloud-sdk ${{ env.UP }}
+        CMD: sudo tar -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/google-cloud-sdk ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-google-cloud-sdk
         DIFF_IDS: |
@@ -377,7 +378,7 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c /usr/lib/jvm ${{ env.UP }}
+        CMD: sudo tar -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/jvm ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-jvm
         DIFF_IDS: |
@@ -394,7 +395,7 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c /usr/lib/mono ${{ env.UP }}
+        CMD: sudo tar -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/mono ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-mono
         DIFF_IDS: |
@@ -409,7 +410,7 @@ jobs:
     - name: Dump gcc
       id: gcc
       run: |
-        sudo tar -C / -c /usr/lib/gcc ${{ env.UP }}
+        sudo tar -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/gcc ${{ env.UP }}
       env:
         UPLOAD_LAYER: 1
         TAG: runner-gcc
@@ -425,7 +426,7 @@ jobs:
     - name: Dump llvm
       id: llvm
       run: |
-        sudo tar -C / -c /usr/lib/llvm-* ${{ env.UP }}
+        sudo tar -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/llvm-* ${{ env.UP }}
       env:
         UPLOAD_LAYER: 1
         TAG: runner-llvm
@@ -443,7 +444,7 @@ jobs:
     - name: Dump firefox
       id: firefox
       run: |
-        sudo tar -C / -c /usr/lib/firefox ${{ env.UP }}
+        sudo tar -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/firefox ${{ env.UP }}
       env:
         UPLOAD_LAYER: 1
         TAG: runner-firefox
@@ -459,7 +460,7 @@ jobs:
     - name: Dump python3
       id: python3
       run: |
-        sudo tar -C / -c /usr/lib/python3 ${{ env.UP }}
+        sudo tar -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/python3 ${{ env.UP }}
       env:
         UPLOAD_LAYER: 1
         TAG: runner-python3
@@ -475,7 +476,7 @@ jobs:
     - name: Dump android
       id: android
       run: |
-        sudo tar -C / -c /usr/local/lib/android ${{ env.UP }}
+        sudo tar -C / -c --no-recursion /usr /usr/local /usr/local/lib --recursion /usr/local/lib/android ${{ env.UP }}
       env:
         UPLOAD_LAYER: 1
         TAG: runner-usr-android
@@ -493,7 +494,7 @@ jobs:
     - name: Dump haskell
       id: haskell
       run: |
-        sudo tar -C / -c /usr/local/.ghcup ${{ env.UP }}
+        sudo tar -C / -c --no-recursion /usr /usr/local /usr/local --recursion /usr/local/.ghcup ${{ env.UP }}
       env:
         UPLOAD_LAYER: 1
         TAG: runner-usr-haskell
@@ -511,7 +512,7 @@ jobs:
     - name: Dump powershell
       id: powershell
       run: |
-        sudo tar -C / -c /usr/local/share/powershell ${{ env.UP }}
+        sudo tar -C / -c --no-recursion /usr /usr/local /usr/local/share --recursion/usr/local/share/powershell ${{ env.UP }}
       env:
         UPLOAD_LAYER: 1
         TAG: runner-usr-powershell
@@ -595,6 +596,54 @@ jobs:
             ${{ steps.usr-local.outputs.layer }},
             ${{ steps.opt.outputs.layer }},
             ${{ steps.snap.outputs.layer }},
+            ${{ steps.dotnet.outputs.layer }},
+            ${{ steps.swift.outputs.layer }},
+            ${{ steps.miniconda.outputs.layer }},
+            ${{ steps.google-cloud-sdk.outputs.layer }},
+            ${{ steps.jvm.outputs.layer }},
+            ${{ steps.mono.outputs.layer }},
+            ${{ steps.gcc.outputs.layer }},
+            ${{ steps.llvm.outputs.layer }},
+            ${{ steps.firefox.outputs.layer }},
+            ${{ steps.python3.outputs.layer }},
+            ${{ steps.android.outputs.layer }},
+            ${{ steps.haskell.outputs.layer }},
+            ${{ steps.powershell.outputs.layer }},
+            ${{ steps.hostedtoolcache.outputs.layer }},
+            ${{ steps.rust.outputs.layer }}
+          ]
+      shell: bash
+    - name: Upload runner-large
+      run: |
+        node script.js
+      env:
+        TAG: runner-large
+        DIFF_IDS: |
+          [
+            ${{ steps.baseImage.outputs.diff_id }},
+            ${{ steps.usr-local.outputs.diff_id }},
+            ${{ steps.opt.outputs.diff_id }},
+            ${{ steps.dotnet.outputs.diff_id }},
+            ${{ steps.swift.outputs.diff_id }},
+            ${{ steps.miniconda.outputs.diff_id }},
+            ${{ steps.google-cloud-sdk.outputs.diff_id }},
+            ${{ steps.jvm.outputs.diff_id }},
+            ${{ steps.mono.outputs.diff_id }},
+            ${{ steps.gcc.outputs.diff_id }},
+            ${{ steps.llvm.outputs.diff_id }},
+            ${{ steps.firefox.outputs.diff_id }},
+            ${{ steps.python3.outputs.diff_id }},
+            ${{ steps.android.outputs.diff_id }},
+            ${{ steps.haskell.outputs.diff_id }},
+            ${{ steps.powershell.outputs.diff_id }},
+            ${{ steps.hostedtoolcache.outputs.diff_id }},
+            ${{ steps.rust.outputs.diff_id }}
+          ]
+        LAYERS: |
+          [
+            ${{ steps.baseImage.outputs.layer }},
+            ${{ steps.usr-local.outputs.layer }},
+            ${{ steps.opt.outputs.layer }},
             ${{ steps.dotnet.outputs.layer }},
             ${{ steps.swift.outputs.layer }},
             ${{ steps.miniconda.outputs.layer }},
