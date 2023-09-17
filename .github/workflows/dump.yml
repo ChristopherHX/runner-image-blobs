@@ -512,7 +512,7 @@ jobs:
     - name: Dump powershell
       id: powershell
       run: |
-        sudo tar -C / -c --no-recursion /usr /usr/local /usr/local/share --recursion/usr/local/share/powershell ${{ env.UP }}
+        sudo tar -C / -c --no-recursion /usr /usr/local /usr/local/share --recursion /usr/local/share/powershell ${{ env.UP }}
       env:
         UPLOAD_LAYER: 1
         TAG: runner-usr-powershell
