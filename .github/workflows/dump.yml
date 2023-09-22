@@ -494,7 +494,7 @@ jobs:
     - name: Dump haskell
       id: haskell
       run: |
-        sudo tar -C / -c --no-recursion /usr /usr/local /usr/local --recursion /usr/local/.ghcup ${{ env.UP }}
+        sudo tar -C / -c --no-recursion /usr /usr/local --recursion /usr/local/.ghcup ${{ env.UP }}
       env:
         UPLOAD_LAYER: 1
         TAG: runner-usr-haskell
