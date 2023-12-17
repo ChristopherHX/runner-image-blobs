@@ -32,6 +32,7 @@ jobs:
             try {
                 var token = "";
                 var refresh = async () => {
+                  console.log("Authenticate against registry");
                   var resp = await fetch("https://ghcr.io/token?service=registry.docker.io&scope=repository:${{ github.repository_owner }}/runner-images:pull,push",  { method: "GET", redirect: "manual", credentials: "include", headers: {
                       "Authorization": "Basic " + btoa("${{ github.actor }}:${{ github.token }}")
                   } });
@@ -39,6 +40,7 @@ jobs:
                   token = (await resp.json()).token;
                 }
                 if(process.env.UPLOAD_LAYER) {
+                  console.log("Uploading Layer");
                   await refresh();
                   var resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/blobs/uploads/", { method: "POST", redirect: "manual", body: "", credentials: "include", headers: {
                       "Authorization": "Bearer " + token
@@ -53,17 +55,34 @@ jobs:
                   console.log(JSON.stringify(resp.status));
                   location = resp.headers.get("Location");
                   console.log("NEXT_URL:" + location);
-                  await refresh();
-                  var url = "https://ghcr.io" + location + "?digest=sha256:" + (await fs.promises.readFile("sha2.txt", { encoding: "utf-8" })).trim();
-                  console.log("url:" + url);
-                  resp = await fetch(url, { method: "PUT", redirect: "manual", duplex: "half", credentials: "include", headers: {
-                      "Content-Type": "application/octet-stream",
-                      "Content-Length": "0",
-                      "Authorization": "Bearer " + token
-                  } });
-                  console.log(JSON.stringify(resp.status));
-                  location = resp.headers.get("Location");
-                  console.log("NEXT_URL:" + location);
+                  console.log("Committing Layer");
+                  var commitLayer = async () => {
+                    await refresh();
+                    var url = "https://ghcr.io" + location + "?digest=sha256:" + (await fs.promises.readFile("sha2.txt", { encoding: "utf-8" })).trim();
+                    console.log("url:" + url);
+                    resp = await fetch(url, { method: "PUT", redirect: "manual", duplex: "half", credentials: "include", headers: {
+                        "Content-Type": "application/octet-stream",
+                        "Content-Length": "0",
+                        "Authorization": "Bearer " + token
+                    } });
+                    console.log(JSON.stringify(resp.status));
+                    location = resp.headers.get("Location");
+                    console.log("NEXT_URL:" + location);
+                  };
+                  var finish = false;
+                  var lastException = null;
+                  for(var i = 0; i < 10 && !finish; i++) {
+                    try {
+                      await commitLayer();
+                      finish = true;
+                    } catch(ex) {
+                      lastException = ex;
+                      console.log("Failed to commit to registry, attempt: " + i + " Cause: " + ex.toString());
+                    }
+                  }
+                  if(!finish) {
+                    throw lastException;
+                  }
                 }
                 clearInterval(token);
 
@@ -410,8 +429,9 @@ jobs:
     - name: Dump gcc
       id: gcc
       run: |
-        sudo tar -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/gcc ${{ env.UP }}
+        ${{ env.CMD }} || ${{ env.CMD }}
       env:
+        CMD: sudo tar -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/gcc ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-gcc
         DIFF_IDS: |
@@ -426,8 +446,9 @@ jobs:
     - name: Dump llvm
       id: llvm
       run: |
-        sudo tar -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/llvm-* ${{ env.UP }}
+        ${{ env.CMD }} || ${{ env.CMD }}
       env:
+        CMD: sudo tar -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/llvm-* ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-llvm
         DIFF_IDS: |
@@ -444,8 +465,9 @@ jobs:
     - name: Dump firefox
       id: firefox
       run: |
-        sudo tar -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/firefox ${{ env.UP }}
+        ${{ env.CMD }} || ${{ env.CMD }}
       env:
+        CMD: sudo tar -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/firefox ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-firefox
         DIFF_IDS: |
@@ -460,8 +482,9 @@ jobs:
     - name: Dump python3
       id: python3
       run: |
-        sudo tar -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/python3 ${{ env.UP }}
+        ${{ env.CMD }} || ${{ env.CMD }}
       env:
+        CMD: sudo tar -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/python3 ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-python3
         DIFF_IDS: |
@@ -476,8 +499,9 @@ jobs:
     - name: Dump android
       id: android
       run: |
-        sudo tar -C / -c --no-recursion /usr /usr/local /usr/local/lib --recursion /usr/local/lib/android ${{ env.UP }}
+        ${{ env.CMD }} || ${{ env.CMD }}
       env:
+        CMD: sudo tar -C / -c --no-recursion /usr /usr/local /usr/local/lib --recursion /usr/local/lib/android ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-usr-android
         DIFF_IDS: |
@@ -494,8 +518,9 @@ jobs:
     - name: Dump haskell
       id: haskell
       run: |
-        sudo tar -C / -c --no-recursion /usr /usr/local --recursion /usr/local/.ghcup ${{ env.UP }}
+        ${{ env.CMD }} || ${{ env.CMD }}
       env:
+        CMD: sudo tar -C / -c --no-recursion /usr /usr/local --recursion /usr/local/.ghcup ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-usr-haskell
         DIFF_IDS: |
@@ -512,8 +537,9 @@ jobs:
     - name: Dump powershell
       id: powershell
       run: |
-        sudo tar -C / -c --no-recursion /usr /usr/local /usr/local/share --recursion /usr/local/share/powershell ${{ env.UP }}
+        ${{ env.CMD }} || ${{ env.CMD }}
       env:
+        CMD: sudo tar -C / -c --no-recursion /usr /usr/local /usr/local/share --recursion /usr/local/share/powershell ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-usr-powershell
         DIFF_IDS: |
@@ -532,8 +558,9 @@ jobs:
     - name: Dump /snap
       id: snap
       run: |
-        sudo tar -C / -c /snap ${{ env.UP }}
+        ${{ env.CMD }} || ${{ env.CMD }}
       env:
+        CMD: sudo tar -C / -c /snap ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-snap
         DIFF_IDS: |
