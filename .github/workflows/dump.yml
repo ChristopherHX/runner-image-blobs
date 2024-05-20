@@ -137,8 +137,14 @@ jobs:
                   }
                 };
 
-                if(process.env.DIFF_IDS) {
-                  var diff_ids = JSON.parse(process.env.DIFF_IDS);
+                if(process.env.LAYER_DIFF_IDS) {
+                  var layer_diff_ids = JSON.parse(process.env.LAYER_DIFF_IDS);
+                  var diff_ids = [];
+                  for(var layer_diff_id of layer_diff_ids) {
+                    if(layer_diff_id.diff_id && layer_diff_id.layer) {
+                      diff_ids.push(JSON.parse(layer_diff_id.diff_id));
+                    }
+                  }
                   config.rootfs.diff_ids = diff_ids.concat(config.rootfs.diff_ids);
                 }
                 if(process.env.UPLOAD_LAYER) {
@@ -187,8 +193,14 @@ jobs:
                   },
                   "layers": []
                 };
-                if(process.env.LAYERS) {
-                  var layers = JSON.parse(process.env.LAYERS);
+                if(process.env.LAYER_DIFF_IDS) {
+                  var layer_diff_ids = JSON.parse(process.env.LAYER_DIFF_IDS);
+                  var layers = [];
+                  for(var layer_diff_id of layer_diff_ids) {
+                    if(layer_diff_id.diff_id && layer_diff_id.layer) {
+                      diff_ids.push(JSON.parse(layer_diff_id.layer));
+                    }
+                  }
                   manifest.layers = layers.concat(manifest.layers);
                 }
                 if(process.env.UPLOAD_LAYER) {
@@ -253,7 +265,7 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c --no-recursion /run /run/user /run/user/* --recursion "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc/*" "--exclude=/dev/*" "--exclude=/run" "--exclude=/sys/*" "--exclude=/tmp/*" "--exclude=/opt/*" "--exclude=/var/cache/*" "--exclude=/var/snap" "--exclude=/var/run/*" "--exclude=/var/tmp/*" "--exclude=/var/crash/*" "--exclude=/var/lib/docker/*" "--exclude=/var/lib/apt/lists/*" "--exclude=/usr/local/*/*"  "--exclude=/mnt/*" "--exclude=/snap/*" "--exclude=/boot" "--exclude=/data" "--exclude=/boot" "--exclude=/imagegeneration/installers/*.tar.*" "--exclude=/home/runner/runners" "--exclude=/home/runner/work" "--exclude=/usr/share/dotnet" "--exclude=/etc/skel" "--exclude=/home/runner/.rustup" "--exclude=/home/runner/.cargo" "--exclude=/home/runner/.dotnet" "--exclude=/home/runneradmin" "--exclude=/usr/share/swift" "--exclude=/usr/share/miniconda" "--exclude=/usr/lib/google-cloud-sdk" "--exclude=/usr/lib/jvm" "--exclude=/usr/lib/mono" "--exclude=/usr/lib/gcc" "--exclude=/usr/lib/llvm-*" "--exclude=/usr/lib/firefox" "--exclude=/usr/lib/python3" / ${{ env.UP }}
+        CMD: sudo tar --ignore-missing -C / -c --no-recursion /run /run/user /run/user/* --recursion "--exclude=$GITHUB_WORKSPACE" "--exclude=/proc/*" "--exclude=/dev/*" "--exclude=/run" "--exclude=/sys/*" "--exclude=/tmp/*" "--exclude=/opt/*" "--exclude=/var/cache/*" "--exclude=/var/snap" "--exclude=/var/run/*" "--exclude=/var/tmp/*" "--exclude=/var/crash/*" "--exclude=/var/lib/docker/*" "--exclude=/var/lib/apt/lists/*" "--exclude=/usr/local/*/*"  "--exclude=/mnt/*" "--exclude=/snap/*" "--exclude=/boot" "--exclude=/data" "--exclude=/boot" "--exclude=/imagegeneration/installers/*.tar.*" "--exclude=/home/runner/runners" "--exclude=/home/runner/work" "--exclude=/usr/share/dotnet" "--exclude=/etc/skel" "--exclude=/home/runner/.rustup" "--exclude=/home/runner/.cargo" "--exclude=/home/runner/.dotnet" "--exclude=/home/runneradmin" "--exclude=/usr/share/swift" "--exclude=/usr/share/miniconda" "--exclude=/usr/lib/google-cloud-sdk" "--exclude=/usr/lib/jvm" "--exclude=/usr/lib/mono" "--exclude=/usr/lib/gcc" "--exclude=/usr/lib/llvm-*" "--exclude=/usr/lib/firefox" "--exclude=/usr/lib/python3" / ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-base
       shell: bash
@@ -262,16 +274,12 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c "--exclude=/usr/local/lib/android" "--exclude=/usr/local/.ghcup" "--exclude=/usr/local/share/powershell" --no-recursion /usr --recursion /usr/local ${{ env.UP }}
+        CMD: sudo tar --ignore-missing -C / -c "--exclude=/usr/local/lib/android" "--exclude=/usr/local/.ghcup" "--exclude=/usr/local/share/powershell" --no-recursion /usr --recursion /usr/local ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-usr-local
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }}
           ]
       shell: bash
     - name: Dump /opt
@@ -279,16 +287,12 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c "--exclude=/opt/hostedtoolcache" /opt ${{ env.UP }}
+        CMD: sudo tar --ignore-missing -C / -c "--exclude=/opt/hostedtoolcache" /opt ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-opt
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }}
           ]
       shell: bash
     - name: Dump /opt/hostedtoolcache
@@ -296,16 +300,12 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c --no-recursion /opt --recursion /opt/hostedtoolcache ${{ env.UP }}
+        CMD: sudo tar --ignore-missing -C / -c --no-recursion /opt --recursion /opt/hostedtoolcache ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-hostedtoolcache
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }}
           ]
       shell: bash
     - name: Dump rust
@@ -313,16 +313,12 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c --no-recursion /home /home/runner --recursion /home/runner/.rustup /home/runner/.cargo ${{ env.UP }}
+        CMD: sudo tar --ignore-missing -C / -c --no-recursion /home /home/runner --recursion /home/runner/.rustup /home/runner/.cargo ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-rust
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }}
           ]
       shell: bash
     - name: Dump /usr/share/dotnet
@@ -330,16 +326,12 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c --no-recursion /home /home/runner /usr /usr/share --recursion /usr/share/dotnet /home/runner/.dotnet ${{ env.UP }}
+        CMD: sudo tar --ignore-missing -C / -c --no-recursion /home /home/runner /usr /usr/share --recursion /usr/share/dotnet /home/runner/.dotnet ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-dotnet
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }}
           ]
       shell: bash
     - name: Dump /usr/share/swift
@@ -347,16 +339,12 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c --no-recursion /usr /usr/share --recursion /usr/share/swift ${{ env.UP }}
+        CMD: sudo tar --ignore-missing -C / -c --no-recursion /usr /usr/share --recursion /usr/share/swift ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-swift
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }}
           ]
       shell: bash
     - name: Dump /usr/share/miniconda
@@ -364,16 +352,12 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c --no-recursion /usr /usr/share --recursion /usr/share/miniconda ${{ env.UP }}
+        CMD: sudo tar --ignore-missing -C / -c --no-recursion /usr /usr/share --recursion /usr/share/miniconda ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-miniconda
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }}
           ]
       shell: bash
     - name: Dump /usr/lib/google-cloud-sdk
@@ -381,16 +365,12 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/google-cloud-sdk ${{ env.UP }}
+        CMD: sudo tar --ignore-missing -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/google-cloud-sdk ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-google-cloud-sdk
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }}
           ]
       shell: bash
     - name: Dump /usr/lib/jvm
@@ -398,16 +378,12 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/jvm ${{ env.UP }}
+        CMD: sudo tar --ignore-missing -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/jvm ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-jvm
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }}
           ]
       shell: bash
     - name: Dump /usr/lib/mono
@@ -415,16 +391,12 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/mono ${{ env.UP }}
+        CMD: sudo tar --ignore-missing -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/mono ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-mono
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }}
           ]
       shell: bash
     - name: Dump gcc
@@ -432,16 +404,12 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/gcc ${{ env.UP }}
+        CMD: sudo tar --ignore-missing -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/gcc ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-gcc
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }}
           ]
       shell: bash
     - name: Dump llvm
@@ -449,18 +417,13 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/llvm-* ${{ env.UP }}
+        CMD: sudo tar --ignore-missing -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/llvm-* ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-llvm
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }},
-            ${{ steps.gcc.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }},
-            ${{ steps.gcc.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }},
+            ${{ tojson(steps.gcc.outputs) }}
           ]
       shell: bash
     - name: Dump firefox
@@ -468,16 +431,12 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/firefox ${{ env.UP }}
+        CMD: sudo tar --ignore-missing -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/firefox ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-firefox
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }}
           ]
       shell: bash
     - name: Dump python3
@@ -485,16 +444,12 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/python3 ${{ env.UP }}
+        CMD: sudo tar --ignore-missing -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/python3 ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-python3
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }}
           ]
       shell: bash
     - name: Dump android
@@ -502,18 +457,13 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c --no-recursion /usr /usr/local /usr/local/lib --recursion /usr/local/lib/android ${{ env.UP }}
+        CMD: sudo tar --ignore-missing -C / -c --no-recursion /usr /usr/local /usr/local/lib --recursion /usr/local/lib/android ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-usr-android
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }},
-            ${{ steps.usr-local.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }},
-            ${{ steps.usr-local.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }},
+            ${{ tojson(steps.usr-local.outputs) }}
           ]
       shell: bash
     - name: Dump haskell
@@ -521,18 +471,13 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c --no-recursion /usr /usr/local --recursion /usr/local/.ghcup ${{ env.UP }}
+        CMD: sudo tar --ignore-missing -C / -c --no-recursion /usr /usr/local --recursion /usr/local/.ghcup ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-usr-haskell
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }},
-            ${{ steps.usr-local.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }},
-            ${{ steps.usr-local.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }},
+            ${{ tojson(steps.usr-local.outputs) }}
           ]
       shell: bash
     - name: Dump powershell
@@ -540,20 +485,14 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c --no-recursion /usr /usr/local /usr/local/share --recursion /usr/local/share/powershell ${{ env.UP }}
+        CMD: sudo tar --ignore-missing -C / -c --no-recursion /usr /usr/local /usr/local/share --recursion /usr/local/share/powershell ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-usr-powershell
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }},
-            ${{ steps.usr-local.outputs.diff_id }},
-            ${{ steps.opt.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }},
-            ${{ steps.usr-local.outputs.layer }},
-            ${{ steps.opt.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }},
+            ${{ tojson(steps.usr-local.outputs) }},
+            ${{ tojson(steps.opt.outputs) }}
           ]
       shell: bash
     - name: Dump /snap
@@ -561,16 +500,12 @@ jobs:
       run: |
         ${{ env.CMD }} || ${{ env.CMD }}
       env:
-        CMD: sudo tar -C / -c /snap ${{ env.UP }}
+        CMD: sudo tar --ignore-missing -C / -c /snap ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-snap
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }}
           ]
       shell: bash
     - name: Upload runner-usr-local-opt
@@ -578,17 +513,11 @@ jobs:
         node script.js
       env:
         TAG: runner-usr-local-opt
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }},
-            ${{ steps.usr-local.outputs.diff_id }},
-            ${{ steps.opt.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }},
-            ${{ steps.usr-local.outputs.layer }},
-            ${{ steps.opt.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }},
+            ${{ tojson(steps.usr-local.outputs) }},
+            ${{ tojson(steps.opt.outputs) }}
           ]
       shell: bash
     - name: Upload runner-usr-local-opt-snap
@@ -596,49 +525,27 @@ jobs:
         node script.js
       env:
         TAG: runner-usr-local-opt-snap
-        DIFF_IDS: |
+        LAYER_LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }},
-            ${{ steps.usr-local.outputs.diff_id }},
-            ${{ steps.opt.outputs.diff_id }},
-            ${{ steps.snap.outputs.diff_id }},
-            ${{ steps.dotnet.outputs.diff_id }},
-            ${{ steps.swift.outputs.diff_id }},
-            ${{ steps.miniconda.outputs.diff_id }},
-            ${{ steps.google-cloud-sdk.outputs.diff_id }},
-            ${{ steps.jvm.outputs.diff_id }},
-            ${{ steps.mono.outputs.diff_id }},
-            ${{ steps.gcc.outputs.diff_id }},
-            ${{ steps.llvm.outputs.diff_id }},
-            ${{ steps.firefox.outputs.diff_id }},
-            ${{ steps.python3.outputs.diff_id }},
-            ${{ steps.android.outputs.diff_id }},
-            ${{ steps.haskell.outputs.diff_id }},
-            ${{ steps.powershell.outputs.diff_id }},
-            ${{ steps.hostedtoolcache.outputs.diff_id }},
-            ${{ steps.rust.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }},
-            ${{ steps.usr-local.outputs.layer }},
-            ${{ steps.opt.outputs.layer }},
-            ${{ steps.snap.outputs.layer }},
-            ${{ steps.dotnet.outputs.layer }},
-            ${{ steps.swift.outputs.layer }},
-            ${{ steps.miniconda.outputs.layer }},
-            ${{ steps.google-cloud-sdk.outputs.layer }},
-            ${{ steps.jvm.outputs.layer }},
-            ${{ steps.mono.outputs.layer }},
-            ${{ steps.gcc.outputs.layer }},
-            ${{ steps.llvm.outputs.layer }},
-            ${{ steps.firefox.outputs.layer }},
-            ${{ steps.python3.outputs.layer }},
-            ${{ steps.android.outputs.layer }},
-            ${{ steps.haskell.outputs.layer }},
-            ${{ steps.powershell.outputs.layer }},
-            ${{ steps.hostedtoolcache.outputs.layer }},
-            ${{ steps.rust.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }},
+            ${{ tojson(steps.usr-local.outputs) }},
+            ${{ tojson(steps.opt.outputs) }},
+            ${{ tojson(steps.snap.outputs) }},
+            ${{ tojson(steps.dotnet.outputs) }},
+            ${{ tojson(steps.swift.outputs) }},
+            ${{ tojson(steps.miniconda.outputs) }},
+            ${{ tojson(steps.google-cloud-sdk.outputs) }},
+            ${{ tojson(steps.jvm.outputs) }},
+            ${{ tojson(steps.mono.outputs) }},
+            ${{ tojson(steps.gcc.outputs) }},
+            ${{ tojson(steps.llvm.outputs) }},
+            ${{ tojson(steps.firefox.outputs) }},
+            ${{ tojson(steps.python3.outputs) }},
+            ${{ tojson(steps.android.outputs) }},
+            ${{ tojson(steps.haskell.outputs) }},
+            ${{ tojson(steps.powershell.outputs) }},
+            ${{ tojson(steps.hostedtoolcache.outputs) }},
+            ${{ tojson(steps.rust.outputs) }}
           ]
       shell: bash
     - name: Upload runner-large
@@ -646,47 +553,26 @@ jobs:
         node script.js
       env:
         TAG: runner-large
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }},
-            ${{ steps.usr-local.outputs.diff_id }},
-            ${{ steps.opt.outputs.diff_id }},
-            ${{ steps.dotnet.outputs.diff_id }},
-            ${{ steps.swift.outputs.diff_id }},
-            ${{ steps.miniconda.outputs.diff_id }},
-            ${{ steps.google-cloud-sdk.outputs.diff_id }},
-            ${{ steps.jvm.outputs.diff_id }},
-            ${{ steps.mono.outputs.diff_id }},
-            ${{ steps.gcc.outputs.diff_id }},
-            ${{ steps.llvm.outputs.diff_id }},
-            ${{ steps.firefox.outputs.diff_id }},
-            ${{ steps.python3.outputs.diff_id }},
-            ${{ steps.android.outputs.diff_id }},
-            ${{ steps.haskell.outputs.diff_id }},
-            ${{ steps.powershell.outputs.diff_id }},
-            ${{ steps.hostedtoolcache.outputs.diff_id }},
-            ${{ steps.rust.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }},
-            ${{ steps.usr-local.outputs.layer }},
-            ${{ steps.opt.outputs.layer }},
-            ${{ steps.dotnet.outputs.layer }},
-            ${{ steps.swift.outputs.layer }},
-            ${{ steps.miniconda.outputs.layer }},
-            ${{ steps.google-cloud-sdk.outputs.layer }},
-            ${{ steps.jvm.outputs.layer }},
-            ${{ steps.mono.outputs.layer }},
-            ${{ steps.gcc.outputs.layer }},
-            ${{ steps.llvm.outputs.layer }},
-            ${{ steps.firefox.outputs.layer }},
-            ${{ steps.python3.outputs.layer }},
-            ${{ steps.android.outputs.layer }},
-            ${{ steps.haskell.outputs.layer }},
-            ${{ steps.powershell.outputs.layer }},
-            ${{ steps.hostedtoolcache.outputs.layer }},
-            ${{ steps.rust.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }},
+            ${{ tojson(steps.usr-local.outputs) }},
+            ${{ tojson(steps.opt.outputs) }},
+            ${{ tojson(steps.dotnet.outputs) }},
+            ${{ tojson(steps.swift.outputs) }},
+            ${{ tojson(steps.miniconda.outputs) }},
+            ${{ tojson(steps.google-cloud-sdk.outputs) }},
+            ${{ tojson(steps.jvm.outputs) }},
+            ${{ tojson(steps.mono.outputs) }},
+            ${{ tojson(steps.gcc.outputs) }},
+            ${{ tojson(steps.llvm.outputs) }},
+            ${{ tojson(steps.firefox.outputs) }},
+            ${{ tojson(steps.python3.outputs) }},
+            ${{ tojson(steps.android.outputs) }},
+            ${{ tojson(steps.haskell.outputs) }},
+            ${{ tojson(steps.powershell.outputs) }},
+            ${{ tojson(steps.hostedtoolcache.outputs) }},
+            ${{ tojson(steps.rust.outputs) }}
           ]
       shell: bash
     - name: Upload runner-medium
@@ -694,23 +580,14 @@ jobs:
         node script.js
       env:
         TAG: runner-medium
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }},
-            ${{ steps.usr-local.outputs.diff_id }},
-            ${{ steps.opt.outputs.diff_id }},
-            ${{ steps.gcc.outputs.diff_id }},
-            ${{ steps.llvm.outputs.diff_id }},
-            ${{ steps.python3.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }},
-            ${{ steps.usr-local.outputs.layer }},
-            ${{ steps.opt.outputs.layer }},
-            ${{ steps.gcc.outputs.layer }},
-            ${{ steps.llvm.outputs.layer }},
-            ${{ steps.python3.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }},
+            ${{ tojson(steps.usr-local.outputs) }},
+            ${{ tojson(steps.opt.outputs) }},
+            ${{ tojson(steps.gcc.outputs) }},
+            ${{ tojson(steps.llvm.outputs) }},
+            ${{ tojson(steps.python3.outputs) }}
           ]
       shell: bash
     - name: Upload runner-medium-powershell
@@ -718,25 +595,15 @@ jobs:
         node script.js
       env:
         TAG: runner-medium-powershell
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }},
-            ${{ steps.usr-local.outputs.diff_id }},
-            ${{ steps.opt.outputs.diff_id }},
-            ${{ steps.gcc.outputs.diff_id }},
-            ${{ steps.llvm.outputs.diff_id }},
-            ${{ steps.python3.outputs.diff_id }},
-            ${{ steps.powershell.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }},
-            ${{ steps.usr-local.outputs.layer }},
-            ${{ steps.opt.outputs.layer }},
-            ${{ steps.gcc.outputs.layer }},
-            ${{ steps.llvm.outputs.layer }},
-            ${{ steps.python3.outputs.layer }},
-            ${{ steps.powershell.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }},
+            ${{ tojson(steps.usr-local.outputs) }},
+            ${{ tojson(steps.opt.outputs) }},
+            ${{ tojson(steps.gcc.outputs) }},
+            ${{ tojson(steps.llvm.outputs) }},
+            ${{ tojson(steps.python3.outputs) }},
+            ${{ tojson(steps.powershell.outputs) }}
           ]
       shell: bash
     - name: Upload runner-medium-haskell
@@ -744,25 +611,15 @@ jobs:
         node script.js
       env:
         TAG: runner-medium-haskell
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }},
-            ${{ steps.usr-local.outputs.diff_id }},
-            ${{ steps.opt.outputs.diff_id }},
-            ${{ steps.gcc.outputs.diff_id }},
-            ${{ steps.llvm.outputs.diff_id }},
-            ${{ steps.python3.outputs.diff_id }},
-            ${{ steps.haskell.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }},
-            ${{ steps.usr-local.outputs.layer }},
-            ${{ steps.opt.outputs.layer }},
-            ${{ steps.gcc.outputs.layer }},
-            ${{ steps.llvm.outputs.layer }},
-            ${{ steps.python3.outputs.layer }},
-            ${{ steps.haskell.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }},
+            ${{ tojson(steps.usr-local.outputs) }},
+            ${{ tojson(steps.opt.outputs) }},
+            ${{ tojson(steps.gcc.outputs) }},
+            ${{ tojson(steps.llvm.outputs) }},
+            ${{ tojson(steps.python3.outputs) }},
+            ${{ tojson(steps.haskell.outputs) }}
           ]
       shell: bash
     - name: Upload runner-medium-dotnet
@@ -770,25 +627,15 @@ jobs:
         node script.js
       env:
         TAG: runner-medium-dotnet
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }},
-            ${{ steps.usr-local.outputs.diff_id }},
-            ${{ steps.opt.outputs.diff_id }},
-            ${{ steps.gcc.outputs.diff_id }},
-            ${{ steps.llvm.outputs.diff_id }},
-            ${{ steps.python3.outputs.diff_id }},
-            ${{ steps.dotnet.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }},
-            ${{ steps.usr-local.outputs.layer }},
-            ${{ steps.opt.outputs.layer }},
-            ${{ steps.gcc.outputs.layer }},
-            ${{ steps.llvm.outputs.layer }},
-            ${{ steps.python3.outputs.layer }},
-            ${{ steps.dotnet.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }},
+            ${{ tojson(steps.usr-local.outputs) }},
+            ${{ tojson(steps.opt.outputs) }},
+            ${{ tojson(steps.gcc.outputs) }},
+            ${{ tojson(steps.llvm.outputs) }},
+            ${{ tojson(steps.python3.outputs) }},
+            ${{ tojson(steps.dotnet.outputs) }}
           ]
       shell: bash
     - name: Upload runner-medium-rust
@@ -796,25 +643,15 @@ jobs:
         node script.js
       env:
         TAG: runner-medium-rust
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }},
-            ${{ steps.usr-local.outputs.diff_id }},
-            ${{ steps.opt.outputs.diff_id }},
-            ${{ steps.gcc.outputs.diff_id }},
-            ${{ steps.llvm.outputs.diff_id }},
-            ${{ steps.python3.outputs.diff_id }},
-            ${{ steps.rust.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }},
-            ${{ steps.usr-local.outputs.layer }},
-            ${{ steps.opt.outputs.layer }},
-            ${{ steps.gcc.outputs.layer }},
-            ${{ steps.llvm.outputs.layer }},
-            ${{ steps.python3.outputs.layer }},
-            ${{ steps.rust.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }},
+            ${{ tojson(steps.usr-local.outputs) }},
+            ${{ tojson(steps.opt.outputs) }},
+            ${{ tojson(steps.gcc.outputs) }},
+            ${{ tojson(steps.llvm.outputs) }},
+            ${{ tojson(steps.python3.outputs) }},
+            ${{ tojson(steps.rust.outputs) }}
           ]
       shell: bash
     - name: Upload runner-medium-swift
@@ -822,25 +659,15 @@ jobs:
         node script.js
       env:
         TAG: runner-medium-swift
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }},
-            ${{ steps.usr-local.outputs.diff_id }},
-            ${{ steps.opt.outputs.diff_id }},
-            ${{ steps.gcc.outputs.diff_id }},
-            ${{ steps.llvm.outputs.diff_id }},
-            ${{ steps.python3.outputs.diff_id }},
-            ${{ steps.swift.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }},
-            ${{ steps.usr-local.outputs.layer }},
-            ${{ steps.opt.outputs.layer }},
-            ${{ steps.gcc.outputs.layer }},
-            ${{ steps.llvm.outputs.layer }},
-            ${{ steps.python3.outputs.layer }},
-            ${{ steps.swift.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }},
+            ${{ tojson(steps.usr-local.outputs) }},
+            ${{ tojson(steps.opt.outputs) }},
+            ${{ tojson(steps.gcc.outputs) }},
+            ${{ tojson(steps.llvm.outputs) }},
+            ${{ tojson(steps.python3.outputs) }},
+            ${{ tojson(steps.swift.outputs) }}
           ]
       shell: bash
     - name: Upload runner-medium-firefox
@@ -848,25 +675,15 @@ jobs:
         node script.js
       env:
         TAG: runner-medium-firefox
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }},
-            ${{ steps.usr-local.outputs.diff_id }},
-            ${{ steps.opt.outputs.diff_id }},
-            ${{ steps.gcc.outputs.diff_id }},
-            ${{ steps.llvm.outputs.diff_id }},
-            ${{ steps.python3.outputs.diff_id }},
-            ${{ steps.firefox.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }},
-            ${{ steps.usr-local.outputs.layer }},
-            ${{ steps.opt.outputs.layer }},
-            ${{ steps.gcc.outputs.layer }},
-            ${{ steps.llvm.outputs.layer }},
-            ${{ steps.python3.outputs.layer }},
-            ${{ steps.firefox.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }},
+            ${{ tojson(steps.usr-local.outputs) }},
+            ${{ tojson(steps.opt.outputs) }},
+            ${{ tojson(steps.gcc.outputs) }},
+            ${{ tojson(steps.llvm.outputs) }},
+            ${{ tojson(steps.python3.outputs) }},
+            ${{ tojson(steps.firefox.outputs) }}
           ]
       shell: bash
     - name: Upload runner-medium-google-cloud-sdk
@@ -874,25 +691,15 @@ jobs:
         node script.js
       env:
         TAG: runner-medium-google-cloud-sdk
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }},
-            ${{ steps.usr-local.outputs.diff_id }},
-            ${{ steps.opt.outputs.diff_id }},
-            ${{ steps.gcc.outputs.diff_id }},
-            ${{ steps.llvm.outputs.diff_id }},
-            ${{ steps.python3.outputs.diff_id }},
-            ${{ steps.google-cloud-sdk.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }},
-            ${{ steps.usr-local.outputs.layer }},
-            ${{ steps.opt.outputs.layer }},
-            ${{ steps.gcc.outputs.layer }},
-            ${{ steps.llvm.outputs.layer }},
-            ${{ steps.python3.outputs.layer }},
-            ${{ steps.google-cloud-sdk.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }},
+            ${{ tojson(steps.usr-local.outputs) }},
+            ${{ tojson(steps.opt.outputs) }},
+            ${{ tojson(steps.gcc.outputs) }},
+            ${{ tojson(steps.llvm.outputs) }},
+            ${{ tojson(steps.python3.outputs) }},
+            ${{ tojson(steps.google-cloud-sdk.outputs) }}
           ]
       shell: bash
     - name: Upload runner-medium-miniconda
@@ -900,25 +707,15 @@ jobs:
         node script.js
       env:
         TAG: runner-medium-miniconda
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }},
-            ${{ steps.usr-local.outputs.diff_id }},
-            ${{ steps.opt.outputs.diff_id }},
-            ${{ steps.gcc.outputs.diff_id }},
-            ${{ steps.llvm.outputs.diff_id }},
-            ${{ steps.python3.outputs.diff_id }},
-            ${{ steps.miniconda.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }},
-            ${{ steps.usr-local.outputs.layer }},
-            ${{ steps.opt.outputs.layer }},
-            ${{ steps.gcc.outputs.layer }},
-            ${{ steps.llvm.outputs.layer }},
-            ${{ steps.python3.outputs.layer }},
-            ${{ steps.miniconda.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }},
+            ${{ tojson(steps.usr-local.outputs) }},
+            ${{ tojson(steps.opt.outputs) }},
+            ${{ tojson(steps.gcc.outputs) }},
+            ${{ tojson(steps.llvm.outputs) }},
+            ${{ tojson(steps.python3.outputs) }},
+            ${{ tojson(steps.miniconda.outputs) }}
           ]
       shell: bash
     - name: Upload runner-medium-hostedtoolcache
@@ -926,25 +723,15 @@ jobs:
         node script.js
       env:
         TAG: runner-medium-hostedtoolcache
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }},
-            ${{ steps.usr-local.outputs.diff_id }},
-            ${{ steps.opt.outputs.diff_id }},
-            ${{ steps.gcc.outputs.diff_id }},
-            ${{ steps.llvm.outputs.diff_id }},
-            ${{ steps.python3.outputs.diff_id }},
-            ${{ steps.hostedtoolcache.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }},
-            ${{ steps.usr-local.outputs.layer }},
-            ${{ steps.opt.outputs.layer }},
-            ${{ steps.gcc.outputs.layer }},
-            ${{ steps.llvm.outputs.layer }},
-            ${{ steps.python3.outputs.layer }},
-            ${{ steps.hostedtoolcache.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }},
+            ${{ tojson(steps.usr-local.outputs) }},
+            ${{ tojson(steps.opt.outputs) }},
+            ${{ tojson(steps.gcc.outputs) }},
+            ${{ tojson(steps.llvm.outputs) }},
+            ${{ tojson(steps.python3.outputs) }},
+            ${{ tojson(steps.hostedtoolcache.outputs) }}
           ]
       shell: bash
     - name: Upload runner-medium-mono
@@ -952,25 +739,15 @@ jobs:
         node script.js
       env:
         TAG: runner-medium-mono
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }},
-            ${{ steps.usr-local.outputs.diff_id }},
-            ${{ steps.opt.outputs.diff_id }},
-            ${{ steps.gcc.outputs.diff_id }},
-            ${{ steps.llvm.outputs.diff_id }},
-            ${{ steps.python3.outputs.diff_id }},
-            ${{ steps.mono.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }},
-            ${{ steps.usr-local.outputs.layer }},
-            ${{ steps.opt.outputs.layer }},
-            ${{ steps.gcc.outputs.layer }},
-            ${{ steps.llvm.outputs.layer }},
-            ${{ steps.python3.outputs.layer }},
-            ${{ steps.mono.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }},
+            ${{ tojson(steps.usr-local.outputs) }},
+            ${{ tojson(steps.opt.outputs) }},
+            ${{ tojson(steps.gcc.outputs) }},
+            ${{ tojson(steps.llvm.outputs) }},
+            ${{ tojson(steps.python3.outputs) }},
+            ${{ tojson(steps.mono.outputs) }}
           ]
       shell: bash
     - name: Upload runner-medium-android
@@ -978,25 +755,15 @@ jobs:
         node script.js
       env:
         TAG: runner-medium-android
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }},
-            ${{ steps.usr-local.outputs.diff_id }},
-            ${{ steps.opt.outputs.diff_id }},
-            ${{ steps.gcc.outputs.diff_id }},
-            ${{ steps.llvm.outputs.diff_id }},
-            ${{ steps.python3.outputs.diff_id }},
-            ${{ steps.android.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }},
-            ${{ steps.usr-local.outputs.layer }},
-            ${{ steps.opt.outputs.layer }},
-            ${{ steps.gcc.outputs.layer }},
-            ${{ steps.llvm.outputs.layer }},
-            ${{ steps.python3.outputs.layer }},
-            ${{ steps.android.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }},
+            ${{ tojson(steps.usr-local.outputs) }},
+            ${{ tojson(steps.opt.outputs) }},
+            ${{ tojson(steps.gcc.outputs) }},
+            ${{ tojson(steps.llvm.outputs) }},
+            ${{ tojson(steps.python3.outputs) }},
+            ${{ tojson(steps.android.outputs) }}
           ]
       shell: bash
     - name: Upload runner-medium-jvm
@@ -1004,24 +771,14 @@ jobs:
         node script.js
       env:
         TAG: runner-medium-jvm
-        DIFF_IDS: |
+        LAYER_DIFF_IDS: |
           [
-            ${{ steps.baseImage.outputs.diff_id }},
-            ${{ steps.usr-local.outputs.diff_id }},
-            ${{ steps.opt.outputs.diff_id }},
-            ${{ steps.gcc.outputs.diff_id }},
-            ${{ steps.llvm.outputs.diff_id }},
-            ${{ steps.python3.outputs.diff_id }},
-            ${{ steps.jvm.outputs.diff_id }}
-          ]
-        LAYERS: |
-          [
-            ${{ steps.baseImage.outputs.layer }},
-            ${{ steps.usr-local.outputs.layer }},
-            ${{ steps.opt.outputs.layer }},
-            ${{ steps.gcc.outputs.layer }},
-            ${{ steps.llvm.outputs.layer }},
-            ${{ steps.python3.outputs.layer }},
-            ${{ steps.jvm.outputs.layer }}
+            ${{ tojson(steps.baseImage.outputs) }},
+            ${{ tojson(steps.usr-local.outputs) }},
+            ${{ tojson(steps.opt.outputs) }},
+            ${{ tojson(steps.gcc.outputs) }},
+            ${{ tojson(steps.llvm.outputs) }},
+            ${{ tojson(steps.python3.outputs) }},
+            ${{ tojson(steps.jvm.outputs) }}
           ]
       shell: bash
