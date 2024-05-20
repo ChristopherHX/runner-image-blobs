@@ -2,6 +2,11 @@ on:
   push:
   schedule:
   - cron: 0 22 */7 * *
+  workflow_dispatch:
+    inputs:
+      FORCE_UPDATE:
+        type: boolean
+        required: false
 jobs:
   dump:
     if: github.event_name != 'schedule' || vars.ENABLE_SCHEDULE == 'true'
@@ -18,6 +23,7 @@ jobs:
       SUFFIX: -${{ github.run_id }}.${{ github.run_attempt }}
       UP: |-
         | tee >(sha256sum | awk '{ print $1 }' > sha.txt) | gzip -9 -c | tee >(sha256sum | awk '{ print $1 }' > sha2.txt) | node script.js
+      FORCE_UPDATE: ${{ inputs.FORCE_UPDATE }}
     steps:
     - name: Setup node
       uses: actions/setup-node@v3
@@ -233,7 +239,7 @@ jobs:
                       "Authorization": "Bearer " + token
                   } });
 
-                  if(resp.status < 200 || resp.status > 299) {
+                  if(resp.status < 200 || resp.status > 299 || process.env.FORCE_UPDATE === "true") {
                   
                       resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/manifests/" + friendlyTag, { method: "PUT", redirect: "manual", body: strmanifest, duplex: "half", credentials: "include", headers: {
                           "Content-Type": "application/vnd.docker.distribution.manifest.v2+json",
