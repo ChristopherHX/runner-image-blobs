@@ -198,7 +198,7 @@ jobs:
                   var layers = [];
                   for(var layer_diff_id of layer_diff_ids) {
                     if(layer_diff_id.diff_id && layer_diff_id.layer) {
-                      diff_ids.push(JSON.parse(layer_diff_id.layer));
+                      layers.push(JSON.parse(layer_diff_id.layer));
                     }
                   }
                   manifest.layers = layers.concat(manifest.layers);
