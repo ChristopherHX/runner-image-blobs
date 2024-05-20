@@ -26,7 +26,7 @@ jobs:
     - name: Create Script
       run: |
         var fs = require("fs");
-        var token = setInterval(() => {
+        var showProgress = setInterval(() => {
             console.log("Bytes read: " + process.stdin.bytesRead);
         }, 5000);
         (async () => {
@@ -85,7 +85,7 @@ jobs:
                     throw lastException;
                   }
                 }
-                clearInterval(token);
+                clearInterval(showProgress);
 
                 var environment = await fs.promises.readFile("/etc/environment", { encoding: "utf-8" });
                 var envMap = {};
