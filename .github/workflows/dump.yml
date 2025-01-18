@@ -16,6 +16,8 @@ jobs:
         - ubuntu-20.04
         - ubuntu-22.04
         - ubuntu-24.04
+        - ubuntu-22.04-arm
+        - ubuntu-24.04-arm
       fail-fast: false
     runs-on: ${{ matrix.runner }}
     permissions: write-all
@@ -112,11 +114,13 @@ jobs:
                   }
                 }
 
-                var friendlyTag = envMap["ImageOS"] && envMap["ImageVersion"] ? envMap["ImageOS"] + "-" + process.env.TAG + "-" + envMap["ImageVersion"] : null;
-                var latestTag = envMap["ImageOS"] && envMap["ImageVersion"] ? envMap["ImageOS"] + "-" + process.env.TAG + "-latest" : null;
+                var arm = ${{ tojson(contains(matrix.runner, 'arm')) }}
 
+                var friendlyTag = envMap["ImageOS"] && envMap["ImageVersion"] ? envMap["ImageOS"] + "-" + process.env.TAG + "-" + envMap["ImageVersion"] + (arm ? "-arm64" : "") : null;
+                var latestTag = envMap["ImageOS"] && envMap["ImageVersion"] ? envMap["ImageOS"] + "-" + process.env.TAG + "-latest" + (arm ? "-arm64" : ""): null;
+                
                 var config = {
-                  "architecture": "amd64",
+                  "architecture": arm ? "arm64" : "amd64",
                   "os": "linux",
                   "config": {
                     "Env": envList,
@@ -222,7 +226,7 @@ jobs:
                 console.log(strmanifest);
                 
                 await refresh();
-                var tag = process.env.TAG + (process.env.SUFFIX || '');
+                var tag = process.env.TAG + (process.env.SUFFIX || '') + (arm ? "-arm64" : "");
                 if(envMap["ImageOS"]) {
                   tag = envMap["ImageOS"] + "-" + tag;
                 }
