@@ -119,7 +119,22 @@ jobs:
                 var friendlyTag = envMap["ImageOS"] && envMap["ImageVersion"] ? envMap["ImageOS"] + "-" + process.env.TAG + "-" + envMap["ImageVersion"] + (arm ? "-arm64" : "") : null;
                 var latestTag = envMap["ImageOS"] && envMap["ImageVersion"] ? envMap["ImageOS"] + "-" + process.env.TAG + "-latest" + (arm ? "-arm64" : ""): null;
                 
+                var labels = {
+                  "org.opencontainers.image.authors": ${{ toJson(format('{0}/{1}', github.server_url, github.repository_owner)) }},
+                  "org.opencontainers.image.created": new Date().toISOString(),
+                  "org.opencontainers.image.description": "Dump of the runner image",
+                  "org.opencontainers.image.documentation": ${{ toJson(format('{0}/{1}/tree/{2}', github.server_url, github.repository, github.sha)) }},
+                  "org.opencontainers.image.ref.name": ("ghcr.io/" + ${{ toJson(github.repository_owner) }} + "/runner-images").toLowerCase(),
+                  "org.opencontainers.image.revision": ${{ toJson(github.sha) }},
+                  "org.opencontainers.image.source": ${{ toJson(format('{0}/{1}/tree/{2}', github.server_url, github.repository, github.sha)) }},
+                  "org.opencontainers.image.title": arm ? "runner-image-arm64" : "runner-image-amd64",
+                  "org.opencontainers.image.url": ${{ toJson(format('{0}/{1}/tree/{2}', github.server_url, github.repository, github.sha)) }},
+                  "org.opencontainers.image.vendor": ${{ toJson(github.repository_owner) }},
+                  "org.opencontainers.image.version": friendlyTag
+                };
+
                 var config = {
+                  "created": new Date().toISOString(),
                   "architecture": arm ? "arm64" : "amd64",
                   "os": "linux",
                   "config": {
@@ -127,25 +142,27 @@ jobs:
                     "Entrypoint": null,
                     "Cmd": [ "bash" ],
                     "User": process.getuid() + ":" + process.getgid(),
-                    "Labels": {
-                      "org.opencontainers.image.authors": ${{ toJson(format('{0}/{1}', github.server_url, github.repository_owner)) }},
-                      "org.opencontainers.image.created": new Date().toISOString(),
-                      "org.opencontainers.image.description": "Dump of the runner image",
-                      "org.opencontainers.image.documentation": ${{ toJson(format('{0}/{1}/tree/{2}', github.server_url, github.repository, github.sha)) }},
-                      "org.opencontainers.image.ref.name": ("ghcr.io/" + ${{ toJson(github.repository_owner) }} + "/runner-images").toLowerCase(),
-                      "org.opencontainers.image.revision": ${{ toJson(github.sha) }},
-                      "org.opencontainers.image.source": ${{ toJson(format('{0}/{1}/tree/{2}', github.server_url, github.repository, github.sha)) }},
-                      "org.opencontainers.image.title": "runner-image-amd64",
-                      "org.opencontainers.image.url": ${{ toJson(format('{0}/{1}/tree/{2}', github.server_url, github.repository, github.sha)) }},
-                      "org.opencontainers.image.vendor": ${{ toJson(github.repository_owner) }},
-                      "org.opencontainers.image.version": friendlyTag
-                    },
+                    "Labels": labels,
                   },
                   "rootfs": {
                     "type": "layers",
-                    "diff_ids": []
-                  }
+                    "diff_ids": [],
+                  },
+                  "history": [
+                    {
+                      "created": new Date().toISOString(),
+                      "created_by": "GitHub Actions via streaming the rootfs using tar and nodejs into ghcr.io, GitHub Hosted Runners do not have enough space for docker build / pull itself",
+                      "empty_layer": true,
+                    },
+                  ],
                 };
+                for(var nlabel in labels) {
+                  config.history.push({
+                    "created": new Date().toISOString(),
+                    "created_by": `LABEL ${nlabel}=${labels[nlabel]}`,
+                    "empty_layer": true,
+                  });
+                }
 
                 if(process.env.LAYER_DIFF_IDS) {
                   var layer_diff_ids = JSON.parse(process.env.LAYER_DIFF_IDS);
@@ -199,9 +216,10 @@ jobs:
                   "config": {
                     "mediaType": "application/vnd.docker.container.image.v1+json",
                     "size": strconfig.length,
-                    "digest": "sha256:" + hash
+                    "digest": "sha256:" + hash,
                   },
-                  "layers": []
+                  "layers": [],
+                  "annotations": labels,
                 };
                 if(process.env.LAYER_DIFF_IDS) {
                   var layer_diff_ids = JSON.parse(process.env.LAYER_DIFF_IDS);
