@@ -283,7 +283,7 @@ jobs:
                   }
                 }
 
-                fs.appendFileSync("tags-${{ matrix.runner }}.txt", tags.join("\n") + "\n");
+                fs.appendFileSync("tags-${{ matrix.runner }}.txt", tags.map(t => ("${{ github.repository_owner }}/" + imageName + ":" + t).toLowerCase()).join("\n") + "\n");
                 
                 process.exitCode = 0;
             } catch(ex) {

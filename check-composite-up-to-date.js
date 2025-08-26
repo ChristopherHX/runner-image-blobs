@@ -36,7 +36,7 @@ function archFromTag(tag) {
 }
 
 async function getSourceDigest(ref) {
-  const res = await run('docker', ['buildx', 'imagetools', 'inspect', ref, '--format', '{{.Digest}}'], { ignoreReturnCode: true });
+  const res = await run('docker', ['buildx', 'imagetools', 'inspect', ref, '--format', '{{ printf "%s" .Manifest.Digest }}'], { ignoreReturnCode: true });
   if (res.exitCode !== 0) throw new Error(`Failed to inspect source image: ${ref}`);
   const out = res.stdout.trim();
   if (!out.startsWith('sha256:')) throw new Error(`Unexpected digest for ${ref}: ${out}`);
@@ -82,6 +82,15 @@ async function processGroup(baseRef, archRefs) {
       sourceDigests[arch] = digest;
       sources.push(ref);
       console.log(`   Source ${arch} digest: ${digest}`);
+    } else {
+        try {
+            const digest = await getSourceDigest(baseRef + "-" + arch);
+            sourceDigests[arch] = digest;
+            sources.push(ref);
+            console.log(`   Implicit Source ${arch} digest: ${digest}`);
+        } catch {
+            console.log(`Missing Source ${arch} digest`)
+        }
     }
   }
 
@@ -92,7 +101,7 @@ async function processGroup(baseRef, archRefs) {
 
   const manifestObj = await getCompositeManifest(baseRef);
   let needsCreate = false;
-  let reason = '';
+  let reason = `   Up to date: ${baseRef}`;
 
   if (!manifestObj) {
     needsCreate = true;
@@ -102,7 +111,7 @@ async function processGroup(baseRef, archRefs) {
     if (!map) {
       needsCreate = true;
       reason = 'not a manifest list';
-    } else {
+    } else if(Object.keys(map).every(k => Object.keys(sourceDigests).includes(k))) {
       for (const arch of Object.keys(sourceDigests)) {
         if (map[arch] !== sourceDigests[arch]) {
           needsCreate = true;
@@ -110,6 +119,8 @@ async function processGroup(baseRef, archRefs) {
           break;
         }
       }
+    } else {
+        reason = `Missing archs in update ${Object.keys(map).filter(k => !Object.keys(sourceDigests).includes(k)).join(", ")}`
     }
   }
 
@@ -118,7 +129,7 @@ async function processGroup(baseRef, archRefs) {
     await recreateComposite(baseRef, sources);
     return { baseRef, status: 'updated', reason };
   } else {
-    console.log(`   Up to date: ${baseRef}`);
+    console.log(reason);
     return { baseRef, status: 'ok' };
   }
 }
