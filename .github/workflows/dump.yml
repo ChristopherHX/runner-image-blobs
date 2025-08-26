@@ -823,6 +823,7 @@ jobs:
         path: tags-${{ matrix.runner }}.txt
         name: tags-${{ matrix.runner }}
   upload-manifests:
+    runs-on: ubuntu-latest
     if: (!cancelled())
     needs: dump
     permissions: write-all
@@ -849,3 +850,4 @@ jobs:
       run: npm i @actions/exec
     - name: Run Merge
       run: node ./check-composite-up-to-date.js
+
