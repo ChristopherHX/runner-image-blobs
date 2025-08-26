@@ -39,9 +39,10 @@ jobs:
         (async () => {
             try {
                 var token = "";
+                const imageName = "runner-images-experiments"; // "runner-images";
                 var refresh = async () => {
                   console.log("Authenticate against registry");
-                  var resp = await fetch("https://ghcr.io/token?service=registry.docker.io&scope=repository:${{ github.repository_owner }}/runner-images:pull,push",  { method: "GET", redirect: "manual", credentials: "include", headers: {
+                  var resp = await fetch("https://ghcr.io/token?service=registry.docker.io&scope=repository:${{ github.repository_owner }}/" + imageName + ":pull,push",  { method: "GET", redirect: "manual", credentials: "include", headers: {
                       "Authorization": "Basic " + btoa("${{ github.actor }}:${{ github.token }}")
                   } });
                   console.log(JSON.stringify(resp.status));
@@ -50,7 +51,7 @@ jobs:
                 if(process.env.UPLOAD_LAYER) {
                   console.log("Uploading Layer");
                   await refresh();
-                  var resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/blobs/uploads/", { method: "POST", redirect: "manual", body: "", credentials: "include", headers: {
+                  var resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/" + imageName + "/blobs/uploads/", { method: "POST", redirect: "manual", body: "", credentials: "include", headers: {
                       "Authorization": "Bearer " + token
                   } });
                   console.log(JSON.stringify(resp.status));
@@ -124,7 +125,7 @@ jobs:
                   "org.opencontainers.image.created": new Date().toISOString(),
                   "org.opencontainers.image.description": "Dump of the runner image",
                   "org.opencontainers.image.documentation": ${{ toJson(format('{0}/{1}/tree/{2}', github.server_url, github.repository, github.sha)) }},
-                  "org.opencontainers.image.ref.name": ("ghcr.io/" + ${{ toJson(github.repository_owner) }} + "/runner-images").toLowerCase(),
+                  "org.opencontainers.image.ref.name": ("ghcr.io/" + ${{ toJson(github.repository_owner) }} + "/" + imageName + "").toLowerCase(),
                   "org.opencontainers.image.revision": ${{ toJson(github.sha) }},
                   "org.opencontainers.image.source": ${{ toJson(format('{0}/{1}/tree/{2}', github.server_url, github.repository, github.sha)) }},
                   "org.opencontainers.image.title": "runner-image" + archSuffix,
@@ -185,7 +186,7 @@ jobs:
                 var crypto = require('crypto');
                 var hash = crypto.createHash('sha256').update(strconfig).digest('hex');
                 await refresh();
-                var resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/blobs/uploads/", { method: "POST", redirect: "manual", body: "", credentials: "include", headers: {
+                var resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/" + imageName + "/blobs/uploads/", { method: "POST", redirect: "manual", body: "", credentials: "include", headers: {
                     "Authorization": "Bearer " + token
                 } });
                 console.log(JSON.stringify(resp.status));
@@ -248,7 +249,7 @@ jobs:
                 if(envMap["ImageOS"]) {
                   tag = envMap["ImageOS"] + "-" + tag;
                 }
-                resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/manifests/" + tag, { method: "PUT", redirect: "manual", body: strmanifest, duplex: "half", credentials: "include", headers: {
+                resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/" + imageName + "/manifests/" + tag, { method: "PUT", redirect: "manual", body: strmanifest, duplex: "half", credentials: "include", headers: {
                     "Content-Type": "application/vnd.docker.distribution.manifest.v2+json",
                     "Authorization": "Bearer " + token
                 } });
@@ -258,21 +259,21 @@ jobs:
 
                 if(friendlyTag) {
                   await refresh();
-                  resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/manifests/" + friendlyTag, { method: "GET", redirect: "manual", credentials: "include", headers: {
+                  resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/" + imageName + "/manifests/" + friendlyTag, { method: "GET", redirect: "manual", credentials: "include", headers: {
                       "Accept": "application/vnd.docker.distribution.manifest.v2+json",
                       "Authorization": "Bearer " + token
                   } });
 
                   if(resp.status < 200 || resp.status > 299 || process.env.FORCE_UPDATE === "true") {
                   
-                      resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/manifests/" + friendlyTag, { method: "PUT", redirect: "manual", body: strmanifest, duplex: "half", credentials: "include", headers: {
+                      resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/" + imageName + "/manifests/" + friendlyTag, { method: "PUT", redirect: "manual", body: strmanifest, duplex: "half", credentials: "include", headers: {
                           "Content-Type": "application/vnd.docker.distribution.manifest.v2+json",
                           "Authorization": "Bearer " + token
                       } });
                       console.log(JSON.stringify(resp.status));
 
                       console.log("Move latest tag forward");
-                      resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/runner-images/manifests/" + latestTag, { method: "PUT", redirect: "manual", body: strmanifest, duplex: "half", credentials: "include", headers: {
+                      resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/" + imageName + "/manifests/" + latestTag, { method: "PUT", redirect: "manual", body: strmanifest, duplex: "half", credentials: "include", headers: {
                           "Content-Type": "application/vnd.docker.distribution.manifest.v2+json",
                           "Authorization": "Bearer " + token
                       } });
