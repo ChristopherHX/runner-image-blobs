@@ -86,7 +86,7 @@ async function processGroup(baseRef, archRefs) {
         try {
             const digest = await getSourceDigest(baseRef + "-" + arch);
             sourceDigests[arch] = digest;
-            sources.push(ref);
+            sources.push(baseRef + "-" + arch);
             console.log(`   Implicit Source ${arch} digest: ${digest}`);
         } catch {
             console.log(`Missing Source ${arch} digest`)
