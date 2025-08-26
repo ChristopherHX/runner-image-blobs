@@ -28,9 +28,9 @@ jobs:
       FORCE_UPDATE: ${{ inputs.FORCE_UPDATE }}
     steps:
     - name: Setup node
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
-        node-version: 20
+        node-version: 24
     - name: Create Script
       run: |
         var fs = require("fs");
@@ -115,10 +115,11 @@ jobs:
                 }
 
                 var arm = ${{ tojson(contains(matrix.runner, 'arm')) }}
+                var archSuffix = (arm ? "-arm64" : "-amd64");
 
-                var friendlyTag = envMap["ImageOS"] && envMap["ImageVersion"] ? envMap["ImageOS"] + "-" + process.env.TAG + "-" + envMap["ImageVersion"] + (arm ? "-arm64" : "") : null;
-                var latestTag = envMap["ImageOS"] && envMap["ImageVersion"] ? envMap["ImageOS"] + "-" + process.env.TAG + "-latest" + (arm ? "-arm64" : ""): null;
-                
+                var friendlyTag = envMap["ImageOS"] && envMap["ImageVersion"] ? envMap["ImageOS"] + "-" + process.env.TAG + "-" + envMap["ImageVersion"] + archSuffix : null;
+                var latestTag = envMap["ImageOS"] && envMap["ImageVersion"] ? envMap["ImageOS"] + "-" + process.env.TAG + "-latest" + archSuffix : null;
+
                 var labels = {
                   "org.opencontainers.image.authors": ${{ toJson(format('{0}/{1}', github.server_url, github.repository_owner)) }},
                   "org.opencontainers.image.created": new Date().toISOString(),
@@ -127,7 +128,7 @@ jobs:
                   "org.opencontainers.image.ref.name": ("ghcr.io/" + ${{ toJson(github.repository_owner) }} + "/runner-images").toLowerCase(),
                   "org.opencontainers.image.revision": ${{ toJson(github.sha) }},
                   "org.opencontainers.image.source": ${{ toJson(format('{0}/{1}/tree/{2}', github.server_url, github.repository, github.sha)) }},
-                  "org.opencontainers.image.title": arm ? "runner-image-arm64" : "runner-image-amd64",
+                  "org.opencontainers.image.title": "runner-image" + archSuffix,
                   "org.opencontainers.image.url": ${{ toJson(format('{0}/{1}/tree/{2}', github.server_url, github.repository, github.sha)) }},
                   "org.opencontainers.image.vendor": ${{ toJson(github.repository_owner) }},
                   "org.opencontainers.image.version": friendlyTag
@@ -244,7 +245,7 @@ jobs:
                 console.log(strmanifest);
                 
                 await refresh();
-                var tag = process.env.TAG + (process.env.SUFFIX || '') + (arm ? "-arm64" : "");
+                var tag = process.env.TAG + (process.env.SUFFIX || '') + archSuffix;
                 if(envMap["ImageOS"]) {
                   tag = envMap["ImageOS"] + "-" + tag;
                 }
@@ -253,6 +254,8 @@ jobs:
                     "Authorization": "Bearer " + token
                 } });
                 console.log(JSON.stringify(resp.status));
+
+                var tags = [ tag ];
 
                 if(friendlyTag) {
                   await refresh();
@@ -275,8 +278,12 @@ jobs:
                           "Authorization": "Bearer " + token
                       } });
                       console.log(JSON.stringify(resp.status));
+
+                      tags.push(friendlyTag, latestTag);
                   }
                 }
+
+                fs.appendFileSync("tags-${{ matrix.runner }}.txt", tags.join("\n") + "\n");
                 
                 process.exitCode = 0;
             } catch(ex) {
@@ -810,3 +817,35 @@ jobs:
             ${{ tojson(steps.jvm.outputs) }}
           ]
       shell: bash
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        path: tags-${{ matrix.runner }}.txt
+        name: tags-${{ matrix.runner }}
+  upload-manifests:
+    if: (!cancelled())
+    needs: dump
+    permissions: write-all
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v5
+    - name: Download All Artifacts
+      uses: actions/download-artifact@v5
+      with:
+        path: tags
+        pattern: tags-*
+        merge-multiple: true
+    - name: Merge tags.txt
+      run: cat tags/*.txt > tags.txt
+    - name: Dump tags
+      run: cat tags.txt
+    - name: Docker Login
+      run: docker login -u ${{ github.actor }} -p ${{ github.token }} ghcr.io
+    - name: Setup node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 24
+    - name: Npm deps
+      run: npm i @actions/exec
+    - name: Run Merge
+      run: node ./check-composite-up-to-date.js
