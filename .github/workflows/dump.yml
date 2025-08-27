@@ -39,7 +39,7 @@ jobs:
         (async () => {
             try {
                 var token = "";
-                const imageName = "runner-images-experiments"; // "runner-images";
+                const imageName = ${{ github.ref_name == github.event.repository.default_branch && '"runner-images"' || "runner-images-experiments" }};
                 var refresh = async () => {
                   console.log("Authenticate against registry");
                   var resp = await fetch("https://ghcr.io/token?service=registry.docker.io&scope=repository:${{ github.repository_owner }}/" + imageName + ":pull,push",  { method: "GET", redirect: "manual", credentials: "include", headers: {
