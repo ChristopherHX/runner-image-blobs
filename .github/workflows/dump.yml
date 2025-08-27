@@ -283,7 +283,7 @@ jobs:
                   }
                 }
 
-                fs.appendFileSync("tags-${{ matrix.runner }}.txt", tags.map(t => ("${{ github.repository_owner }}/" + imageName + ":" + t).toLowerCase()).join("\n") + "\n");
+                fs.appendFileSync("tags-${{ matrix.runner }}.txt", tags.map(t => ("ghcr.io/${{ github.repository_owner }}/" + imageName + ":" + t).toLowerCase()).join("\n") + "\n");
                 
                 process.exitCode = 0;
             } catch(ex) {
@@ -850,5 +850,6 @@ jobs:
       run: npm i @actions/exec
     - name: Run Merge
       run: node ./check-composite-up-to-date.js
+
 
 
