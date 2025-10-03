@@ -343,6 +343,19 @@ jobs:
             ${{ tojson(steps.baseImage.outputs) }}
           ]
       shell: bash
+    - name: Dump gcc
+      id: gcc
+      run: |
+        ${{ env.CMD }} || ${{ env.CMD }}
+      env:
+        CMD: sudo tar --ignore-failed-read -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/gcc ${{ env.UP }}
+        UPLOAD_LAYER: 1
+        TAG: runner-gcc
+        LAYER_DIFF_IDS: |
+          [
+            ${{ tojson(steps.baseImage.outputs) }}
+          ]
+      shell: bash
     - name: Dump rust
       id: rust
       run: |
@@ -353,7 +366,8 @@ jobs:
         TAG: runner-rust
         LAYER_DIFF_IDS: |
           [
-            ${{ tojson(steps.baseImage.outputs) }}
+            ${{ tojson(steps.baseImage.outputs) }},
+            ${{ tojson(steps.gcc.outputs) }}
           ]
       shell: bash
     - name: Dump /usr/share/dotnet
@@ -429,19 +443,6 @@ jobs:
         CMD: sudo tar --ignore-failed-read -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/mono ${{ env.UP }}
         UPLOAD_LAYER: 1
         TAG: runner-mono
-        LAYER_DIFF_IDS: |
-          [
-            ${{ tojson(steps.baseImage.outputs) }}
-          ]
-      shell: bash
-    - name: Dump gcc
-      id: gcc
-      run: |
-        ${{ env.CMD }} || ${{ env.CMD }}
-      env:
-        CMD: sudo tar --ignore-failed-read -C / -c --no-recursion /usr /usr/lib --recursion /usr/lib/gcc ${{ env.UP }}
-        UPLOAD_LAYER: 1
-        TAG: runner-gcc
         LAYER_DIFF_IDS: |
           [
             ${{ tojson(steps.baseImage.outputs) }}
