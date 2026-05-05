@@ -832,7 +832,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v5
     - name: Download All Artifacts
-      uses: actions/download-artifact@v5
+      uses: actions/download-artifact@v8
       with:
         path: tags
         pattern: tags-*
