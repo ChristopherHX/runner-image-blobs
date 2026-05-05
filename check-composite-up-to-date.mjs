@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-const fs = require('fs/promises');
-const path = require('path');
-const exec = require('@actions/exec');
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import * as exec from '@actions/exec';
 
 const TAG_FILE = process.env.TAGS_FILE || 'tags.txt';
 

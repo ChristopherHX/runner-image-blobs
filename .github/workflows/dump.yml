@@ -850,7 +850,7 @@ jobs:
     - name: Npm deps
       run: npm i @actions/exec
     - name: Run Merge
-      run: node ./check-composite-up-to-date.js
+      run: node ./check-composite-up-to-date.mjs
 
 
 
