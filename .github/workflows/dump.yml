@@ -847,8 +847,7 @@ jobs:
       uses: actions/setup-node@v6
       with:
         node-version: 24
-    - name: Npm deps
-      run: npm i @actions/exec
+    - run: npm ci
     - name: Run Merge
       run: node ./check-composite-up-to-date.mjs
 
