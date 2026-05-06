@@ -27,7 +27,7 @@ jobs:
       FORCE_UPDATE: ${{ inputs.FORCE_UPDATE }}
     steps:
     - name: Setup node
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v6
       with:
         node-version: 24
     - name: Create Script
@@ -818,7 +818,7 @@ jobs:
             ${{ tojson(steps.jvm.outputs) }}
           ]
       shell: bash
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       if: always()
       with:
         path: tags-${{ matrix.runner }}.txt
@@ -830,9 +830,9 @@ jobs:
     permissions: write-all
     steps:
     - name: Checkout
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
     - name: Download All Artifacts
-      uses: actions/download-artifact@v5
+      uses: actions/download-artifact@v8
       with:
         path: tags
         pattern: tags-*
@@ -844,11 +844,10 @@ jobs:
     - name: Docker Login
       run: docker login -u ${{ github.actor }} -p ${{ github.token }} ghcr.io
     - name: Setup node
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v6
       with:
         node-version: 24
-    - name: Npm deps
-      run: npm i @actions/exec
+    - run: npm ci
     - name: Run Merge
       run: node ./check-composite-up-to-date.mjs
 
