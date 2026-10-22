@@ -116,7 +116,6 @@ jobs:
 
                 var arm = ${{ tojson(contains(matrix.runner, 'arm')) }}
                 var archSuffix = (arm ? "-arm64" : "-amd64");
-                // GitHub's arm64 runners report e.g. ImageOS=ubuntu24-arm64, strip it so both architectures share one multi-arch tag
                 var imageOS = envMap["ImageOS"] && envMap["ImageOS"].replace(/-arm64$/, "");
 
                 var friendlyTag = imageOS && envMap["ImageVersion"] ? imageOS + "-" + process.env.TAG + "-" + envMap["ImageVersion"] + archSuffix : null;
