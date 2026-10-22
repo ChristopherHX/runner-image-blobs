@@ -116,9 +116,10 @@ jobs:
 
                 var arm = ${{ tojson(contains(matrix.runner, 'arm')) }}
                 var archSuffix = (arm ? "-arm64" : "-amd64");
+                var imageOS = envMap["ImageOS"] && envMap["ImageOS"].replace(/-arm64$/, "");
 
-                var friendlyTag = envMap["ImageOS"] && envMap["ImageVersion"] ? envMap["ImageOS"] + "-" + process.env.TAG + "-" + envMap["ImageVersion"] + archSuffix : null;
-                var latestTag = envMap["ImageOS"] && envMap["ImageVersion"] ? envMap["ImageOS"] + "-" + process.env.TAG + "-latest" + archSuffix : null;
+                var friendlyTag = imageOS && envMap["ImageVersion"] ? imageOS + "-" + process.env.TAG + "-" + envMap["ImageVersion"] + archSuffix : null;
+                var latestTag = imageOS && envMap["ImageVersion"] ? imageOS + "-" + process.env.TAG + "-latest" + archSuffix : null;
 
                 var labels = {
                   "org.opencontainers.image.authors": ${{ toJson(format('{0}/{1}', github.server_url, github.repository_owner)) }},
@@ -246,8 +247,8 @@ jobs:
                 
                 await refresh();
                 var tag = process.env.TAG + (process.env.SUFFIX || '') + archSuffix;
-                if(envMap["ImageOS"]) {
-                  tag = envMap["ImageOS"] + "-" + tag;
+                if(imageOS) {
+                  tag = imageOS + "-" + tag;
                 }
                 resp = await fetch("https://ghcr.io/v2/${{ github.repository_owner }}/" + imageName + "/manifests/" + tag, { method: "PUT", redirect: "manual", body: strmanifest, duplex: "half", credentials: "include", headers: {
                     "Content-Type": "application/vnd.docker.distribution.manifest.v2+json",
